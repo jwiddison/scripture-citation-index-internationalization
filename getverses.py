@@ -1,6 +1,7 @@
 import re
 import os
 import csv
+from glob import glob
 
 # Change last 3 characters of this string variable if working with different language
 language_string = '?lang=spa'
@@ -36,13 +37,10 @@ def getVerses(path, fileName):
 
         # Clean HTML to get plaintext
         for verse in verse_html:
-            counter = 0
-            footnotes = []
+            offset = -1
             for index in re.finditer('</sup>', verse):
-                footnotes.append(index.start() - 1)
-            for footnote in footnotes:
-                verse = verse[:footnote + counter] + verse[footnote + 1 + counter:]
-                counter -= 1
+                verse = verse[:index.start() + offset] + verse[index.start() + 1 + offset:]
+                offset -= 1
             verse = re.sub('<[^>]+>', '', verse)
             verse_texts.append(verse)
 
@@ -57,22 +55,37 @@ def getVerses(path, fileName):
 
 
 
-path_to_dir = input('\nPlease input the path to the directory containing chapters (Enter "." for current directory): ')
+path_to_dir = input("\nPlease input the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
 
-print('\n-- All chapter files in specified directory: ---\n')
+print('\n-- All chapter files in %s directory: ---\n' % path_to_dir)
+
 for name in os.listdir(path_to_dir):
     if name.endswith(language_string):
         print(name)
 
-# TODO: Ask Dr. Liddle about running the script through sub-directories
-# http://stackoverflow.com/questions/800197/how-to-get-all-of-the-immediate-subdirectories-in-python
-# ^ A good place to start with how find sub-directories.
+print('\n-- ' + path_to_dir  + ' also contains the following sub-directories: --\n')
+print(next(os.walk(path_to_dir))[1])
 
-do_all = input('\nWould you like to run the script on all chapter files in the directory? (y/n) ')
-if do_all == 'y':
-    for name in os.listdir(path_to_dir):
-        if name.endswith(language_string):
-            getVerses(path_to_dir, name)
-else:
+choice = input('\nWhat would you like to do?\n(1) Run for specific file in this directory (%s)\n(2) Run for all files in this directory (%s)\n(3) Run for all files in this directory, and all subdirectories\n\nPlease enter 1, 2, or 3: ' % (path_to_dir, path_to_dir))
+while choice not in ['1', '2', '3']:
+    choice = input('Please enter 1, 2, or 3: ')
+if choice == '1':
     filename = input('\nWhat is the filename to convert to CSV: ')
     getVerses(path_to_dir, filename)
+elif choice == '2':
+    for name in os.listdir(path_to_dir):
+        if name.endswith(language_string):
+            try:
+                getVerses(path_to_dir, name)
+                print(path_to_dir + '/' + name + ' done')
+            except:
+                print('Unable to convert: ' + path_to_dir + '/' + name)
+elif choice == '3':
+    for subdir, dirs, files in os.walk(path_to_dir):
+        for file in files:
+            if file.endswith(language_string):
+                try:
+                    getVerses(subdir, file)
+                    print(subdir + '/' + file + ' done')
+                except:
+                    print('Unable to convert: ' + subdir + '/' + file)
