@@ -33,7 +33,7 @@ def getVerses(path, fileName):
         verse_texts = [] # To hold cleaned text for verse
 
         # Get raw HTML for verses
-        for index in range(len(verse_text_start_locations)):
+        for index in range(len(verse_number_locations)):
             verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
 
         # Clean HTML to get plaintext
