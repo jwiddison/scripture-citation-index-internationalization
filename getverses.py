@@ -3,9 +3,6 @@ import os
 import csv
 from bs4 import BeautifulSoup
 
-soup=BeautifulSoup(1?lang=spa, 'html.parser')
-print(soup.prettify())
-
 # Just change this line to change what language the files are in
 language_string = '?lang=spa'
 
@@ -33,32 +30,43 @@ def getVerses(path, fileName):
 
         # TODO: Fix this horrible mess.  NOTE:  I don't think this way is going to work.  I think I need to do more REGEX stuff below.
         # Helpful? http://stackoverflow.com/questions/14198497/remove-char-at-specific-index-python
-        counter = 0
-        for footnote_index in footnote_letter_locations:
-            # Trying to do it using string slicing right now
-            verses = verses[:footnote_index + counter] + verses[footnote_index + counter + 1:]
-            counter -= 1
+        # counter = 0
+        # for footnote_index in footnote_letter_locations:
+        #     # Trying to do it using string slicing right now
+        #     verses = verses[:footnote_index + counter] + verses[footnote_index + counter + 1:]
+        #     counter -= 1
+
+
+        soup=BeautifulSoup(verses, 'html.parser')
+        # print(soup.get_text())
+
+        for string in soup.stripped_strings:
+            print(repr(string))
+
+        # list_verses = soup.find_all('p')
+        # for verse in list_verses:
+        #     verse = re.sub('<[^>]+>', '', str(verse))
+        # # print(list_verses)
+
 
         verse_texts = []
-        counter = 0
-        for text in range(len(verse_text_start_locations)):
-            verse_texts.append(verses[verse_text_start_locations[counter]:verse_text_end_locations[counter]])
-            # TODO: Fix REGEX to remove <sup></sup> that contains the footnotes.  So it doesn't leave the letter behind.
-            # verse_texts[counter] = re.sub('sup.+\/sup', '', verse_texts[counter])
 
-            verse_texts[counter] = re.sub('<[^>]+>', '', verse_texts[counter])
-            counter += 1
+        for index in range(len(verse_text_start_locations)):
+            verse_texts.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
+            # TODO: Fix REGEX to remove <sup></sup> that contains the footnotes.  So it doesn't leave the letter behind.
+            # verse_texts[index] = re.sub('sup.+\/sup', '', verse_texts[index])
+
+            verse_texts[index] = re.sub('<[^>]+>', '', verse_texts[index])
+
 
         with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
             fieldnames = ['Verse', 'Text']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             # TODO: Check with Dr. Liddle about including header row
             # writer.writeheader()
+            for index in range(len(verse_number_locations)):
+                writer.writerow({'Verse': index + 1, 'Text': verse_texts[index]})
 
-            counter = 0
-            for v in range(len(verse_number_locations)):
-                writer.writerow({'Verse': counter + 1, 'Text': verse_texts[counter]})
-                counter += 1
 
 
 path_to_dir = input('\nPlease input the path to the directory containing chapters (Enter "." for current directory): ')
