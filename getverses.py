@@ -20,6 +20,7 @@ def getVerses(path, fileName):
         try:
             verses = re.search('<div class="verses" id="0">(.+?)</div>', data).group(1)
         except AttributeError:
+            print("something with horribly wrong with %s/%s" % (path, fileName))
             verses = 'ERROR: Verses not found in this file'
 
         # Get substring-index for relevant elements in string
