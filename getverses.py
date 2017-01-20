@@ -1,20 +1,19 @@
 import re
 import os
 import csv
-from bs4 import BeautifulSoup
 
+# Change last 3 characters of this string variable if working with different language
 language_string = '?lang=spa'
 
 def getItemLocations(sub_string, list_to_parse, char_offset, use_end):
     location_list = []
     for index in re.finditer(sub_string, list_to_parse):
-        if use_end:
-            location_list.append(index.end() + char_offset)
-        else:
-            location_list.append(index.start() + char_offset)
+        location_list.append(index.end() + char_offset) if use_end else location_list.append(index.start() + char_offset)
     return location_list
 
 def getVerses(path, fileName):
+
+    # Get HTML from between "verses" divs from file(s) passed into script
     with open('%s/%s' % (path, fileName), 'r') as html:
         data = html.read().replace('\n', '')
         try:
@@ -22,18 +21,21 @@ def getVerses(path, fileName):
         except AttributeError:
             verses = 'ERROR: Verses not found in this file'
 
+        # Get substring-index for relevant elements in string
         verse_number_locations = getItemLocations('class="verse">', verses, 1, True)
         verse_text_start_locations = getItemLocations('</span>', verses, 0, True)
         verse_text_end_locations = getItemLocations('</p>', verses, 0, False)
         footnote_letter_locations = getItemLocations('</sup>', verses, -1, False)
 
-        verse_texts = []
-        for index in range(len(verse_text_start_locations)):
-            verse_texts.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
-            # verse_texts[index] = re.sub('<[^>]+>', '', verse_texts[index])
+        verse_html = [] # To hold raw HTML for verse
+        verse_texts = [] # To hold cleaned text for verse
 
-        verse_texts2 = []
-        for verse in verse_texts:
+        # Get raw HTML for verses
+        for index in range(len(verse_text_start_locations)):
+            verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
+
+        # Clean HTML to get plaintext
+        for verse in verse_html:
             counter = 0
             footnotes = []
             for index in re.finditer('</sup>', verse):
@@ -42,15 +44,16 @@ def getVerses(path, fileName):
                 verse = verse[:footnote + counter] + verse[footnote + 1 + counter:]
                 counter -= 1
             verse = re.sub('<[^>]+>', '', verse)
-            verse_texts2.append(verse)
+            verse_texts.append(verse)
 
+        # Write plaintext into CSV file
         with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
             fieldnames = ['Verse', 'Text']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             # TODO: Check with Dr. Liddle about including header row.  If yes, uncomment next line.
             # writer.writeheader()
             for index in range(len(verse_number_locations)):
-                writer.writerow({'Verse': index + 1, 'Text': verse_texts2[index]})
+                writer.writerow({'Verse': index + 1, 'Text': verse_texts[index]})
 
 
 
@@ -67,9 +70,6 @@ for name in os.listdir(path_to_dir):
 
 do_all = input('\nWould you like to run the script on all chapter files in the directory? (y/n) ')
 if do_all == 'y':
-    # TODO: Do you wanna put them in their own folder?  Ask Dr. Liddle at next meeting.
-    # if not os.path.exists('%s-csv' % path_to_dir):
-    #     os.makedirs('%s-csv' % path_to_dir)
     for name in os.listdir(path_to_dir):
         if name.endswith(language_string):
             getVerses(path_to_dir, name)
