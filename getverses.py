@@ -3,7 +3,6 @@ import os
 import csv
 from bs4 import BeautifulSoup
 
-# Just change this line to change what language the files are in
 language_string = '?lang=spa'
 
 def getItemLocations(sub_string, list_to_parse, char_offset, use_end):
@@ -21,27 +20,33 @@ def getVerses(path, fileName):
         try:
             verses = re.search('<div class="verses" id="0">(.+?)</div>', data).group(1)
         except AttributeError:
-            verses = 'ERROR: Verses not found'
+            verses = 'ERROR: Verses not found in this file'
 
         verse_number_locations = getItemLocations('class="verse">', verses, 1, True)
         verse_text_start_locations = getItemLocations('</span>', verses, 0, True)
-        verse_text_end_locations = getItemLocations('</p>', verses, 1, True)
+        verse_text_end_locations = getItemLocations('</p>', verses, 0, True)
         footnote_letter_locations = getItemLocations('</sup>', verses, -1, False)
 
         # TODO: Fix this horrible mess.  NOTE:  I don't think this way is going to work.  I think I need to do more REGEX stuff below.
         # Helpful? http://stackoverflow.com/questions/14198497/remove-char-at-specific-index-python
-        # counter = 0
+
         # for footnote_index in footnote_letter_locations:
-        #     # Trying to do it using string slicing right now
-        #     verses = verses[:footnote_index + counter] + verses[footnote_index + counter + 1:]
-        #     counter -= 1
+        #     verses = verses[:footnote_index] + verses[footnote_index + 1:]
 
+        # for index in footnote_letter_locations:
+        #     remove_char(verses, index)
 
-        soup=BeautifulSoup(verses, 'html.parser')
-        # print(soup.get_text())
+        # footnotes = []
+        # for index in footnote_letter_locations:
+        #     footnotes.append(verses[index])
+        # print(footnotes)
 
-        for string in soup.stripped_strings:
-            print(repr(string))
+        # Turn the verses string into parsible HTML
+        # soup = BeautifulSoup(verses, 'html.parser')
+        # # print(soup.get_text())
+        #
+        # for string in soup.stripped_strings:
+        #     print(repr(string))
 
         # list_verses = soup.find_all('p')
         # for verse in list_verses:
@@ -50,7 +55,6 @@ def getVerses(path, fileName):
 
 
         verse_texts = []
-
         for index in range(len(verse_text_start_locations)):
             verse_texts.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
             # TODO: Fix REGEX to remove <sup></sup> that contains the footnotes.  So it doesn't leave the letter behind.
@@ -62,7 +66,7 @@ def getVerses(path, fileName):
         with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
             fieldnames = ['Verse', 'Text']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            # TODO: Check with Dr. Liddle about including header row
+            # TODO: Check with Dr. Liddle about including header row.  If yes, uncomment next line.
             # writer.writeheader()
             for index in range(len(verse_number_locations)):
                 writer.writerow({'Verse': index + 1, 'Text': verse_texts[index]})
