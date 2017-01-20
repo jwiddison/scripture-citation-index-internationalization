@@ -1,7 +1,6 @@
 import re
 import os
 import csv
-from glob import glob
 
 # Change last 3 characters of this string variable if working with different language
 language_string = '?lang=spa'
