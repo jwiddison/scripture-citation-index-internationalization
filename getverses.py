@@ -31,10 +31,10 @@ def getVerses(path, fileName):
         for index in range(len(verse_text_start_locations)):
             verse_texts.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
             # verse_texts[index] = re.sub('<[^>]+>', '', verse_texts[index])
-            
-        new_list = []
+            print(type(verse_texts[index]))
+
+        verse_texts2 = []
         for verse in verse_texts:
-            # print(verse)
             counter = 0
             footnotes = []
             for index in re.finditer('</sup>', verse):
@@ -42,29 +42,12 @@ def getVerses(path, fileName):
             for footnote in footnotes:
                 verse = verse[:footnote + counter] + verse[footnote + 1 + counter:]
                 counter -= 1
-            # open_tags = []
-            # close_tags = []
-            # for open_tag in re.finditer('<', verse):
-            #     open_tags.append(open_tag)
-            # for close_tag in re.finditer('>', verse):
-            #     close_tags.append(close_tags)
-            # for index in range(len(open_tag)):
-            #     verse = verse[:index] + verse[index+1:]
-            new_list.append(verse)
-            # verse = re.sub('<[^>]+>', '', verse)
-
-        print(new_list)
-
-        def cleanhtml(raw_html):
-            cleanr = re.compile('<.*?>')
-            cleantext = re.sub(cleanr, '', raw_html)
-            return cleantext
-
-        for verse in new_list:
-            verse = cleanhtml(verse)
-
-        # for index in range(len(new_list)):
-        #     verse_texts[index] = re.sub('<[^>]+>', '', verse_texts[index])
+            print("before regex:")
+            print(verse)
+            verse = re.sub('<[^>]+>', '', verse)
+            print("after regex:")
+            print(verse)
+            verse_texts2.append(verse)
 
         with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
             fieldnames = ['Verse', 'Text']
@@ -72,7 +55,7 @@ def getVerses(path, fileName):
             # TODO: Check with Dr. Liddle about including header row.  If yes, uncomment next line.
             # writer.writeheader()
             for index in range(len(verse_number_locations)):
-                writer.writerow({'Verse': index + 1, 'Text': verse_texts[index]})
+                writer.writerow({'Verse': index + 1, 'Text': verse_texts2[index]})
 
 
 
