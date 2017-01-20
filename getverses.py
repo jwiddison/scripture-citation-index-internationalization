@@ -24,53 +24,47 @@ def getVerses(path, fileName):
 
         verse_number_locations = getItemLocations('class="verse">', verses, 1, True)
         verse_text_start_locations = getItemLocations('</span>', verses, 0, True)
-        verse_text_end_locations = getItemLocations('</p>', verses, 0, True)
+        verse_text_end_locations = getItemLocations('</p>', verses, 0, False)
         footnote_letter_locations = getItemLocations('</sup>', verses, -1, False)
-
-        # TODO: Fix this horrible mess.  NOTE:  I don't think this way is going to work.  I think I need to do more REGEX stuff below.
-        # Helpful? http://stackoverflow.com/questions/14198497/remove-char-at-specific-index-python
-        # for footnote_index in footnote_letter_locations:
-        #     verses = verses[:footnote_index] + verses[footnote_index + 1:]
-
-        # for index in footnote_letter_locations:
-        #     remove_char(verses, index)
-
-        # footnotes = []
-        # for index in footnote_letter_locations:
-        #     footnotes.append(verses[index])
-        # print(footnotes)
-
-        # Turn the verses string into parsible HTML
-        # soup = BeautifulSoup(verses, 'html.parser')
-        # # print(soup.get_text())
-        #
-        # for string in soup.stripped_strings:
-        #     print(repr(string))
-
-        # list_verses = soup.find_all('p')
-        # for verse in list_verses:
-        #     verse = re.sub('<[^>]+>', '', str(verse))
-        # # print(list_verses)
-
 
         verse_texts = []
         for index in range(len(verse_text_start_locations)):
             verse_texts.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
-            # TODO: Fix REGEX to remove <sup></sup> that contains the footnotes.  So it doesn't leave the letter behind.
-            # verse_texts[index] = re.sub('sup.+\/sup', '', verse_texts[index])
-
             # verse_texts[index] = re.sub('<[^>]+>', '', verse_texts[index])
-
+            
+        new_list = []
         for verse in verse_texts:
+            # print(verse)
             counter = 0
             footnotes = []
             for index in re.finditer('</sup>', verse):
                 footnotes.append(index.start() - 1)
             for footnote in footnotes:
                 verse = verse[:footnote + counter] + verse[footnote + 1 + counter:]
-            counter += 1
-            verse = re.sub('<[^>]+>', '', verse)
-            print(verse)
+                counter -= 1
+            # open_tags = []
+            # close_tags = []
+            # for open_tag in re.finditer('<', verse):
+            #     open_tags.append(open_tag)
+            # for close_tag in re.finditer('>', verse):
+            #     close_tags.append(close_tags)
+            # for index in range(len(open_tag)):
+            #     verse = verse[:index] + verse[index+1:]
+            new_list.append(verse)
+            # verse = re.sub('<[^>]+>', '', verse)
+
+        print(new_list)
+
+        def cleanhtml(raw_html):
+            cleanr = re.compile('<.*?>')
+            cleantext = re.sub(cleanr, '', raw_html)
+            return cleantext
+
+        for verse in new_list:
+            verse = cleanhtml(verse)
+
+        # for index in range(len(new_list)):
+        #     verse_texts[index] = re.sub('<[^>]+>', '', verse_texts[index])
 
         with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
             fieldnames = ['Verse', 'Text']
@@ -123,3 +117,28 @@ else:
     #
     # for m in re.finditer('</sup>', verses):
     #     footnote_letter_locations.append(m.start() - 1)
+
+        # TODO: Fix this horrible mess.  NOTE:  I don't think this way is going to work.  I think I need to do more REGEX stuff below.
+        # Helpful? http://stackoverflow.com/questions/14198497/remove-char-at-specific-index-python
+        # for footnote_index in footnote_letter_locations:
+        #     verses = verses[:footnote_index] + verses[footnote_index + 1:]
+
+        # for index in footnote_letter_locations:
+        #     remove_char(verses, index)
+
+        # footnotes = []
+        # for index in footnote_letter_locations:
+        #     footnotes.append(verses[index])
+        # print(footnotes)
+
+        # Turn the verses string into parsible HTML
+        # soup = BeautifulSoup(verses, 'html.parser')
+        # # print(soup.get_text())
+        #
+        # for string in soup.stripped_strings:
+        #     print(repr(string))
+
+        # list_verses = soup.find_all('p')
+        # for verse in list_verses:
+        #     verse = re.sub('<[^>]+>', '', str(verse))
+        # # print(list_verses)
