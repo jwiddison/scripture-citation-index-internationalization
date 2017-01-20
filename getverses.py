@@ -29,7 +29,6 @@ def getVerses(path, fileName):
 
         # TODO: Fix this horrible mess.  NOTE:  I don't think this way is going to work.  I think I need to do more REGEX stuff below.
         # Helpful? http://stackoverflow.com/questions/14198497/remove-char-at-specific-index-python
-
         # for footnote_index in footnote_letter_locations:
         #     verses = verses[:footnote_index] + verses[footnote_index + 1:]
 
@@ -60,8 +59,18 @@ def getVerses(path, fileName):
             # TODO: Fix REGEX to remove <sup></sup> that contains the footnotes.  So it doesn't leave the letter behind.
             # verse_texts[index] = re.sub('sup.+\/sup', '', verse_texts[index])
 
-            verse_texts[index] = re.sub('<[^>]+>', '', verse_texts[index])
+            # verse_texts[index] = re.sub('<[^>]+>', '', verse_texts[index])
 
+        for verse in verse_texts:
+            counter = 0
+            footnotes = []
+            for index in re.finditer('</sup>', verse):
+                footnotes.append(index.start() - 1)
+            for footnote in footnotes:
+                verse = verse[:footnote + counter] + verse[footnote + 1 + counter:]
+            counter += 1
+            verse = re.sub('<[^>]+>', '', verse)
+            print(verse)
 
         with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
             fieldnames = ['Verse', 'Text']
