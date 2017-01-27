@@ -1,0 +1,35 @@
+KEEP:
+<div eid="" words="2" class="signature">
+<em>
+<span class="allCaps">
+<span class="smallCaps">
+<span class="answer">
+<span class="question">
+<span class="line">
+
+
+DELETE:
+<a class="bookmark-anchor dontHighlight" name="">
+<a class="footnote" href="">
+<div class="closing">
+<div class="closingBlock">
+<div class="topic">
+<page-break page="">
+<span class="language emphasis" xml:lang="la">
+<span class="language" xml:lang="he">
+<span class="clarityWord">
+<span class="selah">
+<sup class="studyNoteMarker">
+
+<span class="verse"> (and its contents, the verse number)
+<p class="" uri=""> (this is the overall verse)
+
+<div class="summary"> (and its contents)
+<h2> (and its contents)
+<p> (and its contents)
+<span class="translit" xml:lang="he"> (and its contents)
+
+
+TODO:
+May want (eventually) to transform these types of links:
+    <a href="" class="scriptureRef">

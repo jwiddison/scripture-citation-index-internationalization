@@ -1,9 +1,8 @@
+# !/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
+
 import re
 import os
 import csv
-
-# Change last 3 characters of this string variable if working with different language
-language_string = '?lang=spa'
 
 # I just decided to abstract this out 'cause it got called 4 times in a row
 def getItemLocations(sub_string, list_to_parse, char_offset, use_end):
@@ -16,18 +15,24 @@ def getItemLocations(sub_string, list_to_parse, char_offset, use_end):
 def getVerses(path, fileName):
     # Get HTML from between "verses" divs from file(s) passed into script
     with open('%s/%s' % (path, fileName), 'r') as html:
-        data = html.read().replace('\n', '')
+        data = html.read().replace('\n', ' ')
         try:
-            verses = re.search('<div class="verses" id="0">(.+?)</div>', data).group(1)
+            verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
         except AttributeError:
-            print("something with horribly wrong with %s/%s" % (path, fileName))
+            #TODO: Process in special way for files with no verses (facsimilies, etc.)
+            # BOFM title pages <div id="primary">
+            print("Verses not found in %s/%s. Handling as special case." % (path, fileName))
             verses = 'ERROR: Verses not found in this file'
 
         # Get substring-index for relevant elements in string
-        verse_number_locations = getItemLocations('class="verse">', verses, 1, True)
-        verse_text_start_locations = getItemLocations('</span>', verses, 0, True)
+        verse_number_locations = getItemLocations('<span class="verse">', verses, 1, True)
         verse_text_end_locations = getItemLocations('</p>', verses, 0, False)
         footnote_letter_locations = getItemLocations('</sup>', verses, -1, False)
+
+        verse_text_start_locations = []
+        for index in range(len(verse_number_locations)):
+            location = verses.find('</span>', verse_number_locations[index])
+            verse_text_start_locations.append(location + len('</span>'))
 
         verse_html = [] # To hold raw HTML for verse
         verse_texts = [] # To hold cleaned text for verse
@@ -38,11 +43,40 @@ def getVerses(path, fileName):
 
         # Clean HTML to get plaintext
         for verse in verse_html:
-            offset = -1
-            for index in re.finditer('</sup>', verse):
-                verse = verse[:index.start() + offset] + verse[index.start() + 1 + offset:]
-                offset -= 1
-            verse = re.sub('<[^>]+>', '', verse)
+            # Remove all the specific HTML tags we don't want
+
+            # Tags to Keep:
+            # <div eid="" words="2" class="signature">
+            # <em>
+            # <span class="allCaps">
+            # <span class="smallCaps">
+            # <span class="answer">
+            # <span class="question">
+            # <span class="line">
+
+            # Remove everything else:
+
+            # verse = re.sub('<a[^>]*>[^>?]</a>','',verse)
+            # verse = re.sub('<a[^>]+>[.*?]</a>','',verse)
+            # verse = re.sub('<div class="closing">[.*?]</div>','',verse)
+            # verse = re.sub('<div class="closingBlock">[.*?]</div>','',verse)
+            # verse = re.sub('<div class="topic">[.*?]</div>','',verse)
+            # verse = re.sub('<page-break page="[^>]*">[.*?]</page-break>','',verse)
+            # verse = re.sub('<span class="language emphasis" xml:lang="la">[.*?]</span>','',verse)
+            # verse = re.sub('<span class="language" xml:lang="he">[.*?]</span>','',verse)
+            # verse = re.sub('<span class="clarityWord">[.*?]</span>','',verse)
+            # verse = re.sub('<span class="selah">[.*?]</span>','',verse)
+            # verse = re.sub('<sup[^>]*>[a-z]</sup>','',verse) # sup and its contents
+            # verse = re.sub('<span class="verse">[^>]*</span>','',verse)
+            # verse = re.sub('<p class="[^>]*" uri="[^>]*">[.*?]</p>','',verse) # verse parent p
+            # verse = re.sub('<div class="summary"[^>]*>[a-z]</div>','',verse) # div class="summary" and its contents
+            # verse = re.sub('<h2>[.*?]</h2>','',verse) # H2 / non-greedy
+            # verse = re.sub('<p>[^>]*</p>','',verse)
+            # verse = re.sub('<span class="translit" xml:lang="he">[^>]*</span>','',verse)
+
+
+            # Check for any tags that don't match the 'keep' patterns when we're done.
+            # verse = re.sub('<[^>]+>', '', verse) # Don't do this.
             verse_texts.append(verse)
 
         # Write plaintext into CSV file
@@ -54,6 +88,11 @@ def getVerses(path, fileName):
             for index in range(len(verse_number_locations)):
                 writer.writerow({'Verse': index + 1, 'Text': verse_texts[index]})
 
+# TODO: Ask about just hard coding this or using command-line question
+# language_string = input('\nWhat is the 3-character abbreviation for the language you want to extract: ')
+# language_string = '?lang=' + language_string
+# print('\nUsing ' + language_string)
+language_string = '?lang=spa'
 
 # Command-line interface stuff to run script
 path_to_dir = input("\nPlease input the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
