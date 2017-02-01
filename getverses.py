@@ -24,7 +24,7 @@ def getVerses(path, fileName):
             print("Verses not found in %s/%s. Handling as special case." % (path, fileName))
             verses = 'ERROR: Verses not found in this file'
 
-        # Get substring-index for relevant elements in string
+
         verse_number_locations = getItemLocations('<span class="verse">', verses, 1, True)
         verse_text_end_locations = getItemLocations('</p>', verses, 0, False)
         footnote_letter_locations = getItemLocations('</sup>', verses, -1, False)
@@ -41,22 +41,53 @@ def getVerses(path, fileName):
         for index in range(len(verse_number_locations)):
             verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
 
-        # Clean HTML to get plaintext
+        # Clean HTML
         for verse in verse_html:
-            # Remove all the specific HTML tags we don't want
 
-            # Tags to Keep:
-            # <div eid="" words="2" class="signature">
-            # <em>
-            # <span class="allCaps">
-            # <span class="smallCaps">
-            # <span class="answer">
-            # <span class="question">
-            # <span class="line">
+            tags_to_keep = [
+                '<div eid="" words="2" class="signature">',
+                '<em>',
+                '<span class="allCaps">',
+                '<span class="smallCaps">',
+                '<span class="answer">',
+                '<span class="question">',
+                '<span class="line">',
+                '</div>',
+                '</em>',
+                '</span>',
+            ]
 
-            # Remove everything else:
+            regex_to_remove = [
+                '<a[.*?]>[^>?]</a>',
+                '<a[^>]+>[.*?]</a>',
+                '<div class="closing">[.*?]</div>',
+                '<div class="closingBlock">[.*?]</div>',
+                '<div class="topic">[.*?]</div>',
+                '<page-break page="[^>]*">[.*?]</page-break>',
+                '<span class="language emphasis" xml:lang="la">[.*?]</span>',
+                '<span class="language" xml:lang="he">[.*?]</span>',
+                '<span class="clarityWord">[.*?]</span>',
+                '<span class="selah">[.*?]</span>',
+                '<sup[^>]*>[a-z]</sup>',
+                '<span class="verse">[^>]*</span>',
+                '<p class="[^>]*" uri="[^>]*">[.*?]</p>',
+                '<div class="summary"[^>]*>[a-z]</div>',
+                '<h2>[.*?]</h2>',
+                '<p>[^>]*</p>',
+                '<span class="translit" xml:lang="he">[^>]*</span>',
+            ]
 
-            # verse = re.sub('<a[^>]*>[^>?]</a>','',verse)
+            for r in regex_to_remove:
+                verse = re.sub(r,'',verse)
+
+            matches = re.findall('<.*?>', verse)
+            for match in matches:
+                if match not in tags_to_keep:
+                    print('%s/%s also contains %s' % (path, fileName, match))
+
+            #TODO Handle other tags
+
+            # verse = re.sub('<a(.*?)>[^>?]</a>','',verse)
             # verse = re.sub('<a[^>]+>[.*?]</a>','',verse)
             # verse = re.sub('<div class="closing">[.*?]</div>','',verse)
             # verse = re.sub('<div class="closingBlock">[.*?]</div>','',verse)
@@ -73,7 +104,6 @@ def getVerses(path, fileName):
             # verse = re.sub('<h2>[.*?]</h2>','',verse) # H2 / non-greedy
             # verse = re.sub('<p>[^>]*</p>','',verse)
             # verse = re.sub('<span class="translit" xml:lang="he">[^>]*</span>','',verse)
-
 
             # Check for any tags that don't match the 'keep' patterns when we're done.
             # verse = re.sub('<[^>]+>', '', verse) # Don't do this.
