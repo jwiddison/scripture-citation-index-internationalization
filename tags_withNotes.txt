@@ -27,7 +27,7 @@ DELETE:
 <page-break page="">
 # Found in: Mosiah 23, Mosiah 29, D&C 42, Mark 4, Exodus 12, Ezek 45, Genesis 24, Gen 30, Neh 2, Fac 1, 2, and 3.
 # Because this is a unique tag, and the page=“” always contains only numeric items, I did start and end tags separately.
-# DONE
+# Has no contents.  Is just open and close.
 
 <span class="language emphasis" xml:lang="la">
 # Found in: D&C 128, 135
