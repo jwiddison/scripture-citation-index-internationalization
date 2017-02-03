@@ -1,0 +1,70 @@
+KEEP:
+<div eid="" words="2" class="signature">
+<em>
+<span class="allCaps">
+<span class="smallCaps">
+<span class="answer">
+<span class="question">
+<span class="line">
+
+
+DELETE:
+<a class="bookmark-anchor dontHighlight" name="">
+<a class="footnote" href="">
+
+#Don’t want to keep any A tags, so I delete the start tags, and then all </a> separately.  DONE
+
+<div class="closing">
+
+# Found in: BofM title page, Official Declaration 2, Habakkuk 3, and Job 31
+# Habakkuk and Job in English, these are appended onto the end of the verse
+# PROBLEM HERE.  In both cases, the content is outside the span of the last verse.
+
+<div class="closingBlock">
+
+# Found in: BofM title page, Eight Witnesses, Three Witnesses, D&C 102, 127, 128, OD 1, OD 2, Habakkuk 3, Job 31, A-of-F 1
+
+<div class="topic">
+
+# Found in: D&C Intro, Official Dec 1, Psalm 119, JS-H 1
+
+<page-break page="">
+
+# Found in: Mosiah 23, Mosiah 29, D&C 42, Mark 4, Exodus 12, Ezek 45, Genesis 24, Gen 30, Neh 2, Fac 1, 2, and 3.
+# Because this is a unique tag, and the page=“” always contains only numeric items, I did start and end tags separately.  DONE
+
+<span class="language emphasis" xml:lang="la">
+
+# Found in: D&C 128, 135
+
+<span class="language" xml:lang="he">
+
+# Found in: Psalm 119
+
+<span class="clarityWord">
+
+# Found in 3346 Places….
+
+<span class="selah">
+
+# Found in Habakkuk 3, and around 40 different psalms
+
+<sup class="studyNoteMarker">
+
+# Found multiple times in every chapter (every footnote)
+
+
+- Below: Delete tags AND contents -
+
+<span class="verse"> (and its contents, the verse number)
+<p class="" uri=""> (this is the overall verse)
+
+<div class="summary"> (and its contents)
+<h2> (and its contents)
+<p> (and its contents)
+<span class="translit" xml:lang="he"> (and its contents)
+
+
+TODO:
+May want (eventually) to transform these types of links:
+    <a href="" class="scriptureRef">
