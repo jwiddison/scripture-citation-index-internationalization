@@ -41,8 +41,6 @@ def getVerses(path, fileName):
         for index in range(len(verse_number_locations)):
             verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
 
-        print(verse_html)
-
         # Clean HTML
         for verse in verse_html:
 
@@ -56,52 +54,40 @@ def getVerses(path, fileName):
                 '<span class="line">',
             ]
 
-            # DELETE:
-            # <a class="bookmark-anchor dontHighlight" name="">
-            # <a class="footnote" href="">
-            # <div class="closing">
-            # <div class="closingBlock">
-            # <div class="topic">
-            # <page-break page="">
-            # <span class="language emphasis" xml:lang="la">
-            # <span class="language" xml:lang="he">
-            # <span class="clarityWord">
-            # <span class="selah">
-            # <sup class="studyNoteMarker">
-            # <p class="" uri=""> (this is the overall verse)
-            #
-            # Above: Keep Contents / Below: Remove Contents
-            #
-            # <span class="verse"> (and its contents, the verse number)
-            # <div class="summary"> (and its contents)
-            # <h2> (and its contents)
-            # <p> (and its contents)
-            # <span class="translit" xml:lang="he"> (and its contents)
-
             regex_patterns_to_remove = [
+                # Remove all <a> starting tags
                 '<a[^>]*?class="footnote"[^>]*?>',
                 '<a[^>]*?class="bookmark-anchor\s+dontHighlight"[^>]*?>',
                 # '<a[^>]*?>',
+                # Remove closing </a> tag.  Okay because we don't want to keep any <a> stuff.
                 '</a>',
+
                 '<div\s+class="closing">.*?</div>',
                 '<div\s+class="closingBlock">.*?</div>',
 
                 # '<div\s+class="topic">[.*?]</div>',
                 '<div\s+class="topic">.*?</div>',
 
-                '<page-break[^>]*?page="[0-9]">,
+                '<page-break[^>]*?page="[0-9]">',
                 '</page-break>',
 
                 '<span\s+class="language\s+emphasis"\s+xml:lang="la">[.*?]</span>',
                 '<span\s+class="language"\s+xml:lang="he">[.*?]</span>',
                 '<span\s+class="clarityWord">[.*?]</span>',
                 '<span\s+class="selah">[.*?]</span>',
+
+                # Delete <p> container for verse itself
+                '<p[^>]*?class=""[^>]*?uri="[^>]*?">',
+                # Delete all standalone <p> tags and their contents
+                '<p>[^>]*</p>',
+                # Catch all closing </p> tags from verse container
+                '</p>',
+
                 '<sup[^>]*>[a-z]</sup>',
                 '<span\s+class="verse">[^>]*</span>',
-                '<p\s+class="[^>]*"\s+uri="[^>]*">[.*?]</p>',
                 '<div\s+class="summary"[^>]*>[a-z]</div>',
                 '<h2>[.*?]</h2>',
-                '<p>[^>]*</p>',
+
                 '<span\s+class="translit"\s+xml:lang="he">[^>]*</span>',
             ]
 
