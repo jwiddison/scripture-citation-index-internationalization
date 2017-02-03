@@ -17,13 +17,19 @@ def getVerses(path, fileName):
     with open('%s/%s' % (path, fileName), 'r') as html:
         data = html.read().replace('\n', ' ')
         try:
-            verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
+            if path.endswith('ps') and fileName == '119?lang=spa':
+                verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+)</span></div>', data).group(1)
+                print('PSALM 119')
+                print(verses)
+            else:
+                verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
         except AttributeError:
             #TODO: Process in special way for files with no verses (facsimilies, etc.)
             # BOFM title pages <div id="primary">
             print("Verses not found in %s/%s. Handling as special case." % (path, fileName))
             verses = 'ERROR: Verses not found in this file'
 
+        # print(verses)
 
         verse_number_locations = getItemLocations('<span class="verse">', verses, 1, True)
         verse_text_end_locations = getItemLocations('</p>', verses, 0, False)
@@ -41,58 +47,61 @@ def getVerses(path, fileName):
         for index in range(len(verse_number_locations)):
             verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
 
+        tags_to_keep = [
+            '<div eid="" words="2" class="signature">',
+            '<em>',
+            '<span class="allCaps">',
+            '<span class="smallCaps">',
+            '<span class="answer">',
+            '<span class="question">',
+            '<span class="line">',
+        ]
+
+        regex_patterns_to_remove = [
+            # Remove all <a> starting tags
+            '<a[^>]*?class="footnote"[^>]*?>',
+            '<a[^>]*?class="bookmark-anchor\s+dontHighlight"[^>]*?>',
+            # '<a[^>]*?>',
+            # Remove closing </a> tag.  Okay because we don't want to keep any <a> stuff.
+            '</a>',
+
+            # Can't test if these work yet, becuase they're not contained inside the verse <p> tag.  But we still want the content.
+            '<div\s+class="closing">.*?</div>',
+            '<div\s+class="closingBlock">.*?</div>',
+
+            # '<div\s+class="topic">([.*?])</div>',
+            '<div\s+class="topic">.*?</div>',
+
+            '<page-break[^>]*?page="[0-9]"></page-break>',
+
+            '<span\s+class="language\s+emphasis"\s+xml:lang="la">[.*?]</span>',
+            '<span\s+class="language"\s+xml:lang="he">[.*?]</span>',
+            '<span\s+class="clarityWord">[.*?]</span>',
+            '<span\s+class="selah">[.*?]</span>',
+
+            # Delete <p> container for verse itself
+            '<p[^>]*?class=""[^>]*?uri="[^>]*?">',
+            # Delete all standalone <p> tags and their contents
+            '<p>[^>]*</p>',
+            # Catch all closing </p> tags from verse container
+            '</p>',
+
+            '<sup[^>]*>[a-z]</sup>',
+            '<span\s+class="verse">[^>]*</span>',
+            '<div\s+class="summary"[^>]*>[a-z]</div>',
+            '<h2>[.*?]</h2>',
+
+            '<span\s+class="translit"\s+xml:lang="he">[^>]*</span>',
+        ]
+
         # Clean HTML
         for verse in verse_html:
-
-            tags_to_keep = [
-                '<div eid="" words="2" class="signature">',
-                '<em>',
-                '<span class="allCaps">',
-                '<span class="smallCaps">',
-                '<span class="answer">',
-                '<span class="question">',
-                '<span class="line">',
-            ]
-
-            regex_patterns_to_remove = [
-                # Remove all <a> starting tags
-                '<a[^>]*?class="footnote"[^>]*?>',
-                '<a[^>]*?class="bookmark-anchor\s+dontHighlight"[^>]*?>',
-                # '<a[^>]*?>',
-                # Remove closing </a> tag.  Okay because we don't want to keep any <a> stuff.
-                '</a>',
-
-                '<div\s+class="closing">.*?</div>',
-                '<div\s+class="closingBlock">.*?</div>',
-
-                # '<div\s+class="topic">[.*?]</div>',
-                '<div\s+class="topic">.*?</div>',
-
-                '<page-break[^>]*?page="[0-9]">',
-                '</page-break>',
-
-                '<span\s+class="language\s+emphasis"\s+xml:lang="la">[.*?]</span>',
-                '<span\s+class="language"\s+xml:lang="he">[.*?]</span>',
-                '<span\s+class="clarityWord">[.*?]</span>',
-                '<span\s+class="selah">[.*?]</span>',
-
-                # Delete <p> container for verse itself
-                '<p[^>]*?class=""[^>]*?uri="[^>]*?">',
-                # Delete all standalone <p> tags and their contents
-                '<p>[^>]*</p>',
-                # Catch all closing </p> tags from verse container
-                '</p>',
-
-                '<sup[^>]*>[a-z]</sup>',
-                '<span\s+class="verse">[^>]*</span>',
-                '<div\s+class="summary"[^>]*>[a-z]</div>',
-                '<h2>[.*?]</h2>',
-
-                '<span\s+class="translit"\s+xml:lang="he">[^>]*</span>',
-            ]
-
             for pattern in regex_patterns_to_remove:
                 verse = re.sub(pattern,'',verse)
+            capture_group = re.search('<div\s+class="topic">([.*?])</div>', verse).group(1)
+            verse = re.sub('<div\s+class="topic">([.*?])</div>', capture_group, verse)
+            capture_group = re.search('<h2>([.*?])</h2>', verse).group(1)
+            verse re.sub('<h2>[.*?]</h2>', capture_group, verse)
 
             # To check if there are any other html tags not accounted for.  #TODO: finish this.
             # matches = re.findall('<.*?>', verse)
