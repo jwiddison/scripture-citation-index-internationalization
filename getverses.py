@@ -16,6 +16,7 @@ def getVerses(path, fileName):
         try:
             if path.endswith('ps') and fileName == '119?lang=spa':
                 verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+)</span></div>', data).group(1)
+                # NOTE: Psalm 119 is the only chapter that doesn't work.  For reasons I don't understand, the HTML structure on that one chapter is different than all the others
                 # TODO: Fix Psalm 119
             else:
                 verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
@@ -24,7 +25,6 @@ def getVerses(path, fileName):
             # BOFM title pages <div id="primary">
             print("Verses not found in %s/%s. Handling as special case." % (path, fileName))
             verses = 'ERROR: Verses not found in this file'
-
 
         verse_number_locations = getItemLocations('<span class="verse">', verses, 1, True)
         verse_text_end_locations = getItemLocations('</p>', verses, 0, False)
@@ -55,7 +55,6 @@ def getVerses(path, fileName):
             '</span>',
         ]
 
-
         # Clean HTML
         for verse in verse_html:
 
@@ -64,44 +63,42 @@ def getVerses(path, fileName):
             verse = re.sub('<a[^>]*?>', '', verse)
             verse = re.sub('</a>', '', verse)
 
-            if 'class="closing"' in verse:
-                capture_group = re.search('<div[^>]*?class="closing">([.*?])</div>', verse).group(1)
-                verse = re.sub('<div[^>]*?class="closing">[.*?]</div>', '', verse)
+            capture_group = re.search('<div[^>]*?class="closing">([.*?])</div>', verse)
+            if capture_group:
+                verse = re.sub('<div[^>]*?class="closing">[.*?]</div>', capture_group.group(1), verse)
 
-            if 'class="closingBlock"' in verse:
-                capture_group = re.search('<div[^>]*?class="closingBlock">([.*?])</div>', verse).group(1)
-                verse = re.sub('<div[^>]*?class="closingBlock">[.*?]</div>', '', verse)
+            capture_group = re.search('<div[^>]*?class="closingBlock">([.*?])</div>', verse)
+            if capture_group:
+                verse = re.sub('<div[^>]*?class="closingBlock">[.*?]</div>', capture_group.group(1), verse)
 
-            if 'class="topic"' in verse:
-                capture_group = re.search('<div[^>]*?class="topic">([.*?])</div>', verse).group(1)
-                verse = re.sub('<div[^>]*?class="topic">[.*?]</div>', capture_group, verse)
+            capture_group = re.search('<div[^>]*?class="topic">([.*?])</div>', verse)
+            if capture_group:
+                verse = re.sub('<div[^>]*?class="topic">[.*?]</div>', capture_group.group(1), verse)
 
             verse = re.sub('<page-break[^>]*?>', '', verse)
             verse = re.sub('</page-break>', '', verse)
 
-            if 'class="language emphasis"' in verse:
-                capture_group = re.search('<span[^>]*?class="language[^>]*?emphasis"[^>]*?>([.*?])</span>', verse).group(1)
-                verse = re.sub('<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">[.*?]</span>', capture_group, verse)
+            capture_group = re.search('<span[^>]*?class="language[^>]*?emphasis"[^>]*?>([.*?])</span>', verse)
+            if capture_group:
+                verse = re.sub('<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">[.*?]</span>', capture_group.group(1), verse)
 
-            if 'span class="language' in verse:
-                capture_group = re.search('<span[^>]*?class="language[^>]*?>([.*?])</span>', verse).group(1)
-                verse = re.sub('<span[^>]*?class="language[^>]*?>[.*?]</span>', capture_group, verse)
+            capture_group = re.search('<span[^>]*?class="language[^>]*?>([.*?])</span>', verse)
+            if capture_group:
+                verse = re.sub('<span[^>]*?class="language[^>]*?>[.*?]</span>', capture_group.group(1), verse)
 
-            if 'span class="clarityWord"' in verse:
-                print(' -------- %s/%s is where its dying -------' % (path, fileName))
-                print(verse)
-                capture_group = re.search('<span[^>]*?class="clarityWord">([.*?])</span>', verse).group(1)
-                verse = re.sub('<span[^>]*?class="clarityWord">[.*?]</span>', capture_group, verse)
+            capture_group = re.search('<span[^>]*?class="clarityWord">(.*?)</span>', verse)
+            if capture_group:
+                verse = re.sub('<span[^>]*?class="clarityWord">(.*?)</span>', capture_group.group(1), verse)
 
-            if 'span class="selah"' in verse:
-                capture_group = re.search('<span\s+class="selah">([.*?])</span>', verse).group(1)
-                verse = re.sub('<span\s+class="selah">[.*?]</span>', capture_group, verse)
+            capture_group = re.search('<span[^>]*?class="selah">(.*?)</span>', verse)
+            if capture_group:
+                verse = re.sub('<span[^>]*?class="selah">(.*?)</span>', capture_group.group(1), verse)
 
             verse = re.sub('<sup[^>]*?class="studyNoteMarker">[a-z]</sup>', '', verse)
 
-            if 'p class=""' in verse:
-                capture_group = re.search('<p[^>]*?class=""[^>]*?>([.*?])</p>', verse).group(1)
-                verse = re.sub('<p[^>]*?class=""[^>]*?>[.*?]</p>', capture_group, verse)
+            capture_group = re.search('<p[^>]*?class=""[^>]*?>([.*?])</p>', verse)
+            if capture_group:
+                verse = re.sub('<p[^>]*?class=""[^>]*?>[.*?]</p>', capture_group.group(1), verse)
 
             verse = re.sub('<span[^>]*?class="verse">[0-9]</span>', '', verse)
 
@@ -113,11 +110,11 @@ def getVerses(path, fileName):
 
             verse = re.sub('<span[^>]*?class="translit"[^>]*?xml:lang="he">[.*?]</span>','', verse)
 
-            # # To check if there are any other html tags not accounted for
-            # matches = re.findall('<.*?>', verse)
-            # for match in matches:
-            #     if match not in tags_to_keep:
-            #         print('%s/%s also contains %s' % (path, fileName, match))
+            # To check if there are any other html tags not accounted for
+            matches = re.findall('<[^>]*?>', verse)
+            for match in matches:
+                if match not in tags_to_keep:
+                    print('%s/%s also contains %s' % (path, fileName, match))
 
             verse_texts.append(verse)
 
@@ -127,28 +124,51 @@ def getVerses(path, fileName):
             for index in range(len(verse_number_locations)):
                 writer.writerow({'Verse': index + 1, 'Text': verse_texts[index]})
 
+# ---------------------------------------------------------------------------------------------------------------------- #
+# -------------------------------------------- COMMAND LINE INTERFACE STUFF -------------------------------------------- #
+# ---------------------------------------------------------------------------------------------------------------------- #
+
 # language_string = input('\nWhat is the 3-character abbreviation for the language you want to extract: ')
 # language_string = '?lang=' + language_string
 # print('\nUsing ' + language_string)
 language_string = '?lang=spa'
 
-# Command-line interface stuff to run script
 path_to_dir = input("\nPlease input the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
-print('\n-- All chapter files in %s directory: ---\n' % path_to_dir)
+
+if path_to_dir == '.':
+    print('\n-- The following are all chapter files in the current directory: --\n')
+else:
+    print('\n-- The following are all chapter files in the directory /%s: --\n' % path_to_dir)
+
 for name in os.listdir(path_to_dir):
     if name.endswith(language_string):
         print(name)
-print('\n-- ' + path_to_dir  + ' also contains the following sub-directories: --\n')
+
+if path_to_dir == '.':
+    print('\n-- The current directory also contains the following sub-directories: --\n')
+else:
+    print('\n-- ' + path_to_dir  + ' also contains the following sub-directories: --\n')
+
 print(next(os.walk(path_to_dir))[1])
-choice = input('\nWhat would you like to do?\n(1) Run for specific file in this directory (%s)\n(2) Run for all files in this directory (%s)\n(3) Run for all files in this directory, and all subdirectories\n\nPlease enter 1, 2, or 3: ' % (path_to_dir, path_to_dir))
+
+choice = input(
+    '\nWhat would you like to do?\n\n' +
+    '(1) Run for one specific file in this directory\n' +
+    '(2) Run for all files in this directory\n' +
+    '(3) Run for all files in this directory, and all subdirectories\n' +
+    '\nPlease enter 1, 2, or 3: '
+)
+
 while choice not in ['1', '2', '3']:
     choice = input('Please enter 1, 2, or 3: ')
+
 if choice == '1':
     filename = input('\nWhat is the filename to convert to CSV: ')
     try:
         getVerses(path_to_dir, filename)
     except:
         print('Unable to convert: ' + path_to_dir + '/' + filename)
+
 elif choice == '2':
     for name in os.listdir(path_to_dir):
         if name.endswith(language_string):
@@ -156,12 +176,9 @@ elif choice == '2':
                 getVerses(path_to_dir, name)
             except:
                 print('Unable to convert: ' + path_to_dir + '/' + name)
+
 elif choice == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for file in files:
             if file.endswith(language_string):
-                # try:
                 getVerses(subdir, file)
-                    # print(subdir + '/' + file + ' done')
-                # except:
-                #     print('Unable to convert: ' + subdir + '/' + file)
