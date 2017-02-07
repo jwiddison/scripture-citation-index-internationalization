@@ -53,10 +53,14 @@ def getVerses(path, fileName):
             '<span[^>]*?class="clarityWord">(.*?)</span>',
             '<span[^>]*?class="selah">(.*?)</span>',
             '<p[^>]*?class=""[^>]*?>(.*?)</p>',
+            # TODO: Check with Dr. Liddle on these other-language tags
+            '<span[^>]*?class="">(.*?)</span>', # Added for Portugese
+            '<span[^>]*?class="small">(.*?)</span>', # Added for Italian
+            '<span>(.*?)</span>', # Added for Italian
         ]
 
         regex_patterns_delete_contents = [
-            '<sup[^>]*?class="studyNoteMarker">[a-z]</sup>',
+            '<sup[^>]*?class="studyNoteMarker">(.*?)</sup>',
             '<span[^>]*?class="verse">[0-9]</span>',
             '<div[^>]*?class="summary">(.*?)</div',
             '<h2>(.*?)</h2>',
@@ -78,7 +82,7 @@ def getVerses(path, fileName):
         ]
 
         # Clean HTML
-        for verse in verse_html:
+        for index, verse in enumerate(verse_html):
 
             # Clean out tags where we want to keep the contents
             for pattern in regex_patterns_keep_contents:
@@ -91,11 +95,11 @@ def getVerses(path, fileName):
                 verse = re.sub(pattern, '', verse)
 
 
-            # To check if there are any other html tags not accounted for
-            matches = re.findall('<[^>]*?>', verse)
-            for match in matches:
-                if match not in tags_to_keep:
-                    print('%s/%s also contains %s' % (path, fileName, match))
+            # Check if there are any other html tags not accounted for
+            all_other_tags = re.findall('<[^>]*?>', verse)
+            for tag in all_other_tags:
+                if tag not in tags_to_keep:
+                    print('%s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1))
 
             verse_texts.append(verse)
 
@@ -106,12 +110,10 @@ def getVerses(path, fileName):
                 writer.writerow({'Verse': index + 1, 'Text': verse_texts[index]})
 
 # ---------------------------------------------------------------------------------------------------------------------- #
-# -------------------------------------------- COMMAND LINE INTERFACE STUFF -------------------------------------------- #
+# ----------------------------------------------- COMMAND LINE INTERFACE ----------------------------------------------- #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
-# language_string = input('\nWhat is the 3-character abbreviation for the language you want to extract: ')
-# language_string = '?lang=' + language_string
-# print('\nUsing ' + language_string)
+print('\nCurrently using \'spa\' for language code.  Change in script if desired.')
 language_string = '?lang=spa'
 
 path_to_dir = input("\nPlease input the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
