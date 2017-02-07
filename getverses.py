@@ -42,6 +42,28 @@ def getVerses(path, fileName):
         for index in range(len(verse_number_locations)):
             verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
 
+        regex_patterns_keep_contents = [
+            '<a[^>]*?>(.*?)</a>',
+            '<div[^>]*?class="closing">(.*?)</div>',
+            '<div[^>]*?class="closingBlock">(.*?)</div>',
+            '<div[^>]*?class="topic">(.*?)</div>',
+            '<page-break[^>]*?>(.*?)</page-break>',
+            '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">(.*?)</span>',
+            '<span[^>]*?class="language[^>]*?>(.*?)</span>',
+            '<span[^>]*?class="clarityWord">(.*?)</span>',
+            '<span[^>]*?class="selah">(.*?)</span>',
+            '<p[^>]*?class=""[^>]*?>(.*?)</p>',
+        ]
+
+        regex_patterns_delete_contents = [
+            '<sup[^>]*?class="studyNoteMarker">[a-z]</sup>',
+            '<span[^>]*?class="verse">[0-9]</span>',
+            '<div[^>]*?class="summary">(.*?)</div',
+            '<h2>(.*?)</h2>',
+            '<p>(.*?)</p>',
+            '<span[^>]*?class="translit"[^>]*?xml:lang="he">(.*?)</span>',
+        ]
+
         tags_to_keep = [
             '<div eid="" words="2" class="signature">',
             '</div>',
@@ -58,57 +80,16 @@ def getVerses(path, fileName):
         # Clean HTML
         for verse in verse_html:
 
-            verse = re.sub('<a[^>]*?class="footnote"[^>]*?>', '', verse)
-            verse = re.sub('<a[^>]*?class="bookmark-anchor[^>]*?dontHighlight"[^>]*?>', '' ,verse)
-            verse = re.sub('<a[^>]*?>', '', verse)
-            verse = re.sub('</a>', '', verse)
+            # Clean out tags where we want to keep the contents
+            for pattern in regex_patterns_keep_contents:
+                capture_group = re.search(pattern, verse)
+                if capture_group:
+                    verse = re.sub(pattern, capture_group.group(1), verse)
 
-            capture_group = re.search('<div[^>]*?class="closing">([.*?])</div>', verse)
-            if capture_group:
-                verse = re.sub('<div[^>]*?class="closing">[.*?]</div>', capture_group.group(1), verse)
+            # Remove tags and their contents
+            for pattern in regex_patterns_delete_contents:
+                verse = re.sub(pattern, '', verse)
 
-            capture_group = re.search('<div[^>]*?class="closingBlock">([.*?])</div>', verse)
-            if capture_group:
-                verse = re.sub('<div[^>]*?class="closingBlock">[.*?]</div>', capture_group.group(1), verse)
-
-            capture_group = re.search('<div[^>]*?class="topic">([.*?])</div>', verse)
-            if capture_group:
-                verse = re.sub('<div[^>]*?class="topic">[.*?]</div>', capture_group.group(1), verse)
-
-            verse = re.sub('<page-break[^>]*?>', '', verse)
-            verse = re.sub('</page-break>', '', verse)
-
-            capture_group = re.search('<span[^>]*?class="language[^>]*?emphasis"[^>]*?>([.*?])</span>', verse)
-            if capture_group:
-                verse = re.sub('<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">[.*?]</span>', capture_group.group(1), verse)
-
-            capture_group = re.search('<span[^>]*?class="language[^>]*?>([.*?])</span>', verse)
-            if capture_group:
-                verse = re.sub('<span[^>]*?class="language[^>]*?>[.*?]</span>', capture_group.group(1), verse)
-
-            capture_group = re.search('<span[^>]*?class="clarityWord">(.*?)</span>', verse)
-            if capture_group:
-                verse = re.sub('<span[^>]*?class="clarityWord">(.*?)</span>', capture_group.group(1), verse)
-
-            capture_group = re.search('<span[^>]*?class="selah">(.*?)</span>', verse)
-            if capture_group:
-                verse = re.sub('<span[^>]*?class="selah">(.*?)</span>', capture_group.group(1), verse)
-
-            verse = re.sub('<sup[^>]*?class="studyNoteMarker">[a-z]</sup>', '', verse)
-
-            capture_group = re.search('<p[^>]*?class=""[^>]*?>([.*?])</p>', verse)
-            if capture_group:
-                verse = re.sub('<p[^>]*?class=""[^>]*?>[.*?]</p>', capture_group.group(1), verse)
-
-            verse = re.sub('<span[^>]*?class="verse">[0-9]</span>', '', verse)
-
-            verse = re.sub('<div[^>]*?class="summary">[.*?]</div', '', verse)
-
-            verse = re.sub('<h2>[.*?]</h2>', '', verse)
-
-            verse = re.sub('<p>[.*?]</p>', '', verse)
-
-            verse = re.sub('<span[^>]*?class="translit"[^>]*?xml:lang="he">[.*?]</span>','', verse)
 
             # To check if there are any other html tags not accounted for
             matches = re.findall('<[^>]*?>', verse)
@@ -182,3 +163,53 @@ elif choice == '3':
         for file in files:
             if file.endswith(language_string):
                 getVerses(subdir, file)
+
+
+# TODO: Empty Garbage
+
+    # capture_group = re.search('<a[^>]*?>(.*?)</a>', verse)
+    # if capture_group:
+    #     verse = re.sub('<a[^>]*?>(.*?)</a>', capture_group.group(1), verse)
+    #
+    # capture_group = re.search('<div[^>]*?class="closing">(.*?)</div>', verse)
+    # if capture_group:
+    #     verse = re.sub('<div[^>]*?class="closing">(.*?)</div>', capture_group.group(1), verse)
+    #
+    # capture_group = re.search('<div[^>]*?class="closingBlock">(.*?)</div>', verse)
+    # if capture_group:
+    #     verse = re.sub('<div[^>]*?class="closingBlock">(.*?)</div>', capture_group.group(1), verse)
+    #
+    # capture_group = re.search('<div[^>]*?class="topic">(.*?)</div>', verse)
+    # if capture_group:
+    #     verse = re.sub('<div[^>]*?class="topic">(.*?)</div>', capture_group.group(1), verse)
+    #
+    # capture_group = re.search('<page-break[^>]*?>(.*?)</page-break>', verse)
+    # if capture_group:
+    #     verse = re.sub('<page-break[^>]*?>(.*?)</page-break>', capture_group.group(1), verse)
+    #
+    # capture_group = re.search('<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">(.*?)</span>', verse)
+    # if capture_group:
+    #     verse = re.sub('<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">(.*?)</span>', capture_group.group(1), verse)
+    #
+    # capture_group = re.search('<span[^>]*?class="language[^>]*?>(.*?)</span>', verse)
+    # if capture_group:
+    #     verse = re.sub('<span[^>]*?class="language[^>]*?>(.*?)</span>', capture_group.group(1), verse)
+    #
+    # capture_group = re.search('<span[^>]*?class="clarityWord">(.*?)</span>', verse)
+    # if capture_group:
+    #     verse = re.sub('<span[^>]*?class="clarityWord">(.*?)</span>', capture_group.group(1), verse)
+    #
+    # capture_group = re.search('<span[^>]*?class="selah">(.*?)</span>', verse)
+    # if capture_group:
+    #     verse = re.sub('<span[^>]*?class="selah">(.*?)</span>', capture_group.group(1), verse)
+    #
+    # capture_group = re.search('<p[^>]*?class=""[^>]*?>(.*?)</p>', verse)
+    # if capture_group:
+    #     verse = re.sub('<p[^>]*?class=""[^>]*?>(.*?)</p>', capture_group.group(1), verse)
+    #
+    # verse = re.sub('<sup[^>]*?class="studyNoteMarker">[a-z]</sup>', '', verse)
+    # verse = re.sub('<span[^>]*?class="verse">[0-9]</span>', '', verse)
+    # verse = re.sub('<div[^>]*?class="summary">(.*?)</div', '', verse)
+    # verse = re.sub('<h2>(.*?)</h2>', '', verse)
+    # verse = re.sub('<p>(.*?)</p>', '', verse)
+    # verse = re.sub('<span[^>]*?class="translit"[^>]*?xml:lang="he">(.*?)</span>','', verse)
