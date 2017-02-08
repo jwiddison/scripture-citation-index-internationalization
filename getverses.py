@@ -4,11 +4,59 @@ import re
 import os
 import csv
 
-def getItemLocations(sub_string, list_to_parse, char_offset, use_end):
-    location_list = []
-    for index in re.finditer(sub_string, list_to_parse):
-        location_list.append(index.end() + char_offset) if use_end else location_list.append(index.start() + char_offset)
-    return location_list
+# Constants
+
+regex_patterns_keep_contents = [
+    '<a[^>]*?>(.*?)</a>',
+    '<div[^>]*?class="closing">(.*?)</div>',
+    '<div[^>]*?class="closingBlock">(.*?)</div>',
+    '<div[^>]*?class="topic">(.*?)</div>',
+    '<page-break[^>]*?>(.*?)</page-break>',
+    '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">(.*?)</span>',
+    '<span[^>]*?class="language[^>]*?>(.*?)</span>',
+    '<span[^>]*?class="clarityWord">(.*?)</span>',
+    '<span[^>]*?class="selah">(.*?)</span>',
+    '<p[^>]*?class=""[^>]*?>(.*?)</p>',
+    '<span[^>]*?class="">(.*?)</span>', # Added for Portugese
+    '<span[^>]*?class="small">(.*?)</span>', # Added for Italian
+    '<span>(.*?)</span>', # Added for Italian
+]
+
+regex_patterns_delete_contents = [
+    '<sup[^>]*?class="studyNoteMarker">(.*?)</sup>',
+    '<span[^>]*?class="verse">[0-9]</span>',
+    '<div[^>]*?class="summary">(.*?)</div',
+    '<h2>(.*?)</h2>',
+    '<p>(.*?)</p>',
+    '<span[^>]*?class="translit"[^>]*?xml:lang="he">(.*?)</span>',
+]
+
+tags_to_keep = [
+    '<div eid="" words="2" class="signature">',
+    '</div>',
+    '<em>',
+    '</em>',
+    '<span class="allCaps">',
+    '<span class="smallCaps">',
+    '<span class="answer">',
+    '<span class="question">',
+    '<span class="line">',
+    '</span>',
+]
+
+special_case_chapters = [
+    '/bofm/bofm-title?lang=spa',
+    '/bofm/eight?lang=spa',
+    '/bofm/introduction?lang=spa',
+    '/bofm/three?lang=spa',
+    '/dc-testament/introduction?lang=spa',
+    '/dc-testament/od/1?lang=spa',
+    '/dc-testament/od/2?lang=spa',
+    '/ot/ps/119?lang=spa',
+    '/pgp/fac-1?lang=spa',
+    '/pgp/fac-2?lang=spa',
+    '/pgp/fac-3?lang=spa',
+]
 
 def getVerses(path, fileName):
     with open('%s/%s' % (path, fileName), 'r') as html:
@@ -16,8 +64,6 @@ def getVerses(path, fileName):
         try:
             if path.endswith('ps') and fileName == '119?lang=spa':
                 verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+)</span></div>', data).group(1)
-                # NOTE: Psalm 119 is the only chapter that doesn't work.  For reasons I don't understand, the HTML structure on that one chapter is different than all the others
-                # TODO: Fix Psalm 119
             else:
                 verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
         except AttributeError:
@@ -26,10 +72,17 @@ def getVerses(path, fileName):
             print("Verses not found in %s/%s. Handling as special case." % (path, fileName))
             verses = 'ERROR: Verses not found in this file'
 
-        verse_number_locations = getItemLocations('<span class="verse">', verses, 1, True)
-        verse_text_end_locations = getItemLocations('</p>', verses, 0, False)
-        footnote_letter_locations = getItemLocations('</sup>', verses, -1, False)
+        # Get sub-string index for each verse number
+        verse_number_locations = []
+        for index in re.finditer('<span class="verse">', verses):
+            verse_number_locations.append(index.end() + 1)
 
+        # Get index for the beginning of each verse
+        verse_text_end_locations = []
+        for index in re.finditer('</p>', verses):
+            verse_text_end_locations.append(index.start())
+
+        # Get index for the end of each verse
         verse_text_start_locations = []
         for index in range(len(verse_number_locations)):
             location = verses.find('</span>', verse_number_locations[index])
@@ -42,45 +95,6 @@ def getVerses(path, fileName):
         for index in range(len(verse_number_locations)):
             verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
 
-        regex_patterns_keep_contents = [
-            '<a[^>]*?>(.*?)</a>',
-            '<div[^>]*?class="closing">(.*?)</div>',
-            '<div[^>]*?class="closingBlock">(.*?)</div>',
-            '<div[^>]*?class="topic">(.*?)</div>',
-            '<page-break[^>]*?>(.*?)</page-break>',
-            '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">(.*?)</span>',
-            '<span[^>]*?class="language[^>]*?>(.*?)</span>',
-            '<span[^>]*?class="clarityWord">(.*?)</span>',
-            '<span[^>]*?class="selah">(.*?)</span>',
-            '<p[^>]*?class=""[^>]*?>(.*?)</p>',
-            # TODO: Check with Dr. Liddle on these other-language tags
-            '<span[^>]*?class="">(.*?)</span>', # Added for Portugese
-            '<span[^>]*?class="small">(.*?)</span>', # Added for Italian
-            '<span>(.*?)</span>', # Added for Italian
-        ]
-
-        regex_patterns_delete_contents = [
-            '<sup[^>]*?class="studyNoteMarker">(.*?)</sup>',
-            '<span[^>]*?class="verse">[0-9]</span>',
-            '<div[^>]*?class="summary">(.*?)</div',
-            '<h2>(.*?)</h2>',
-            '<p>(.*?)</p>',
-            '<span[^>]*?class="translit"[^>]*?xml:lang="he">(.*?)</span>',
-        ]
-
-        tags_to_keep = [
-            '<div eid="" words="2" class="signature">',
-            '</div>',
-            '<em>',
-            '</em>',
-            '<span class="allCaps">',
-            '<span class="smallCaps">',
-            '<span class="answer">',
-            '<span class="question">',
-            '<span class="line">',
-            '</span>',
-        ]
-
         # Clean HTML
         for index, verse in enumerate(verse_html):
 
@@ -90,10 +104,9 @@ def getVerses(path, fileName):
                 if capture_group:
                     verse = re.sub(pattern, capture_group.group(1), verse)
 
-            # Remove tags and their contents
+            # Remove other tags and their contents
             for pattern in regex_patterns_delete_contents:
                 verse = re.sub(pattern, '', verse)
-
 
             # Check if there are any other html tags not accounted for
             all_other_tags = re.findall('<[^>]*?>', verse)
@@ -104,10 +117,9 @@ def getVerses(path, fileName):
             verse_texts.append(verse)
 
         with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
-            fieldnames = ['Verse', 'Text']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            for index in range(len(verse_number_locations)):
-                writer.writerow({'Verse': index + 1, 'Text': verse_texts[index]})
+            writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
+            for index, verse in enumerate(verse_texts):
+                writer.writerow({'Verse': index + 1, 'Text': verse})
 
 # ---------------------------------------------------------------------------------------------------------------------- #
 # ----------------------------------------------- COMMAND LINE INTERFACE ----------------------------------------------- #
