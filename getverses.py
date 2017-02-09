@@ -44,11 +44,13 @@ tags_to_keep = [
     '</span>',
 ]
 
-special_case_chapters = [
-    '/bofm/bofm-title?lang=spa',
-    '/bofm/eight?lang=spa',
-    '/bofm/introduction?lang=spa',
-    '/bofm/three?lang=spa',
+special_case_filenames = [
+    'bofm-title?lang=spa',
+    'eight?lang=spa',
+    # 'introduction?lang=spa',
+    #TODO: Uncomment above and delete line below this.
+    'bofmintroduction?lang=spa',
+    'three?lang=spa',
     '/dc-testament/introduction?lang=spa',
     '/dc-testament/od/1?lang=spa',
     '/dc-testament/od/2?lang=spa',
@@ -58,19 +60,74 @@ special_case_chapters = [
     '/pgp/fac-3?lang=spa',
 ]
 
+special_case_remove_tags_keep_contents = [
+    '<div[^>]*?class="subtitle">(.*?)</div>',
+    '<span[^>]*?class="dominant">(.*?)</span>',
+    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+    # '<p>(.*?)</p>',
+    '<div[^>]*?class="closingBlock">(.*?)</div>',
+    '<div[^>]*?class="closing">(.*?)</div>',
+    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">(.*?)</a>',
+    # '<a[^>]*?>(.*?)</a>',
+]
+
+special_case_remove_tags_and_contents = [
+    '<div[^>]*?id="media">(.*?)</div>',
+    '<ul[^>]*?>(.*?)</ul>',
+    '<li[^>]*?>(.*?)</li>',
+    '<ul[^>]*?>',
+    '<p>',
+    '</p>',
+    '\s\s+',
+]
+
+
 def getVerses(path, fileName):
     with open('%s/%s' % (path, fileName), 'r') as html:
         data = html.read().replace('\n', ' ')
-        try:
-            if path.endswith('ps') and fileName == '119?lang=spa':
-                verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+)</span></div>', data).group(1)
-            else:
-                verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
-        except AttributeError:
-            #TODO: Process in special way for files with no verses (facsimilies, etc.)
-            # BOFM title pages <div id="primary">
-            print("Verses not found in %s/%s. Handling as special case." % (path, fileName))
-            verses = 'ERROR: Verses not found in this file'
+
+        if fileName in special_case_filenames:
+            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
+            print('------------------BEFORE CLEANING---------------------')
+            print(verses)
+
+            for pattern in special_case_remove_tags_keep_contents:
+                capture_group = re.search(pattern, verses)
+                if capture_group:
+                    verses = re.sub(pattern, capture_group.group(1), verses)
+
+            for pattern in special_case_remove_tags_and_contents:
+                verses = re.sub(pattern, '', verses)
+
+            # verses = verses.strip('  ')
+            # verses = verses.strip(' ')
+
+            print('%s/%s' % (path, fileName))
+            print('------------- AFTER CLEANING: -----------------')
+            print(verses)
+
+
+            with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
+                writer.writerow({'Verse': 1, 'Text': verses})
+
+            return
+        # try:
+        #     if path.endswith('ps') and fileName == '119?lang=spa':
+        #         verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+)</span></div>', data).group(1)
+        #     elif fileName in special_case_filenames:
+        #         print('in here')
+        #         verses = re.search('<div[^>]*?id="primary">(.+)</ul></div>', data).group(1)
+        #         print(verses)
+        #     else:
+        #         verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
+        # except AttributeError:
+        #     #TODO: Process in special way for files with no verses (facsimilies, etc.)
+        #     # BOFM title pages <div id="primary">
+        #     print("Verses not found in %s/%s. Handling as special case." % (path, fileName))
+        #     verses = 'ERROR: Verses not found in this file'
+
+        print('Am I getting down here?')
 
         # Get sub-string index for each verse number
         verse_number_locations = []
@@ -125,15 +182,18 @@ def getVerses(path, fileName):
 # ----------------------------------------------- COMMAND LINE INTERFACE ----------------------------------------------- #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
-print('\nCurrently using \'spa\' for language code.  Change in script if desired.')
+# print('\nCurrently using \'spa\' for language code.  Change in script if desired.')
 language_string = '?lang=spa'
 
-path_to_dir = input("\nPlease input the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
+# path_to_dir = input("\nPlease input the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
 
-if path_to_dir == '.':
-    print('\n-- The following are all chapter files in the current directory: --\n')
-else:
-    print('\n-- The following are all chapter files in the directory /%s: --\n' % path_to_dir)
+# if path_to_dir == '.':
+#     print('\n-- The following are all chapter files in the current directory: --\n')
+# else:
+#     print('\n-- The following are all chapter files in the directory /%s: --\n' % path_to_dir)
+
+# TODO: Uncomment above and delete this
+path_to_dir = 'special'
 
 for name in os.listdir(path_to_dir):
     if name.endswith(language_string):
@@ -167,10 +227,10 @@ if choice == '1':
 elif choice == '2':
     for name in os.listdir(path_to_dir):
         if name.endswith(language_string):
-            try:
-                getVerses(path_to_dir, name)
-            except:
-                print('Unable to convert: ' + path_to_dir + '/' + name)
+            # try:
+            getVerses(path_to_dir, name)
+            # except:
+            #     print('Unable to convert: ' + path_to_dir + '/' + name)
 
 elif choice == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
