@@ -51,34 +51,47 @@ special_case_filenames = [
     #TODO: Uncomment above and delete line below this.
     'bofmintroduction?lang=spa',
     'three?lang=spa',
-    '/dc-testament/introduction?lang=spa',
-    '/dc-testament/od/1?lang=spa',
-    '/dc-testament/od/2?lang=spa',
-    '/ot/ps/119?lang=spa',
-    '/pgp/fac-1?lang=spa',
-    '/pgp/fac-2?lang=spa',
-    '/pgp/fac-3?lang=spa',
+    'dcintroduction?lang=spa',
+    'od1?lang=spa',
+    'od2?lang=spa',
+    '119?lang=spa',
+    'fac-1?lang=spa',
+    'fac-2?lang=spa',
+    'fac-3?lang=spa',
 ]
 
 special_case_remove_tags_keep_contents = [
-    '<div[^>]*?class="subtitle">(.*?)</div>',
+    # '<div[^>]*?class="subtitle">(.*?)</div>',
+    # '<div[^>]*?class="studyIntro">(.*?)</div>',
     '<span[^>]*?class="dominant">(.*?)</span>',
     '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-    # '<p>(.*?)</p>',
-    '<div[^>]*?class="closingBlock">(.*?)</div>',
+    # '<div[^>]*?class="openingBlock">(.*?)</div>',
+    # '<div[^>]*?class="closingBlock">(.*?)</div>',
     '<div[^>]*?class="closing">(.*?)</div>',
-    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">(.*?)</a>',
-    # '<a[^>]*?>(.*?)</a>',
+    '<span[^>]*?class="language[^>]*?>(.*?)</span>',
+    # '<div[^>]*?class="topic">(.*?)</div>',
+    # '<div[^>]*?class="addressee">(.*?)</div>',
+    '<div[^>]*?class="preamble">(.*?)</div>',
+    '<div[^>]*?class="figure">(.*?)</div>',
+    # '<li[^>]*?>(.*?)</li>',
+
 ]
 
 special_case_remove_tags_and_contents = [
     '<div[^>]*?id="media">(.*?)</div>',
     '<ul[^>]*?>(.*?)</ul>',
-    '<li[^>]*?>(.*?)</li>',
+    '<li[^>]*?class="prev">(.*?)</li>',
+    '<li[^>]*?class="next">(.*?)</li>',
     '<ul[^>]*?>',
     '<p>',
     '</p>',
-    '\s\s+',
+    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+    '<a[^>]*?>',
+    '</a>',
+    '<h2>',
+    '</h2>',
+    '<li>',
+    '</li>',
 ]
 
 
@@ -88,8 +101,10 @@ def getVerses(path, fileName):
 
         if fileName in special_case_filenames:
             verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
-            print('------------------BEFORE CLEANING---------------------')
-            print(verses)
+            # print('------------------BEFORE CLEANING---------------------')
+            # print(verses)
+
+            # verses = re.sub('\s\s+', '', verses)
 
             for pattern in special_case_remove_tags_keep_contents:
                 capture_group = re.search(pattern, verses)
@@ -101,10 +116,15 @@ def getVerses(path, fileName):
 
             # verses = verses.strip('  ')
             # verses = verses.strip(' ')
-
+            print('\n')
             print('%s/%s' % (path, fileName))
             print('------------- AFTER CLEANING: -----------------')
             print(verses)
+
+            all_other_tags = re.findall('<[^>]*?>', verses)
+            for tag in all_other_tags:
+                if tag not in tags_to_keep:
+                    print('%s/%s also contains %s' % (path, fileName, tag))
 
 
             with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
@@ -127,7 +147,6 @@ def getVerses(path, fileName):
         #     print("Verses not found in %s/%s. Handling as special case." % (path, fileName))
         #     verses = 'ERROR: Verses not found in this file'
 
-        print('Am I getting down here?')
 
         # Get sub-string index for each verse number
         verse_number_locations = []
