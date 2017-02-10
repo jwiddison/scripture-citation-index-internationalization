@@ -9,7 +9,7 @@
     <!-- <PageMap>
         <DataObject type='document'><Attribute name='title'>Facsímile Nº 1</Attribute><Attribute name='collection'>scriptures</Attribute></DataObject>
     </PageMap> -->
-    
+
     <script src="//assets.adobedtm.com/05c94072b1046aef0dc9b195809b4d2429a0d30a/satelliteLib-a42cf03bb084dfc1c72d9fa7178dccbd338041d2.js"> </script><link rel="stylesheet" type="text/css" media="all" href="//edge.ldscdn.org/cdn2/csp/platform/styles/platform5.css" class="pf-fix-me"><link rel="stylesheet" type="text/css" media="all" href="//edge.ldscdn.org/cdn2/csp/ldsorg/css/common/lds-old.css" class="pf-fix-me"><script type="text/javascript" src="//edge.ldscdn.org/cdn2/common/scripts/jquery/1.7.1/jquery.min.js"> </script><script src="//edge.ldscdn.org/cdn2/csp/ldsorg/script/common/lds.js"> </script><script src="//edge.ldscdn.org/cdn2/csp/ldsorg/script/common/data.js" type="text/javascript" charset="utf-8"> </script><script type="text/javascript">
             DATA.LANG = 'spa';
             DATA.CLANG = 'spa';
@@ -17,15 +17,15 @@
         </script>
     <link rel="stylesheet" type="text/css" media="all" href="//edge.ldscdn.org/cdn2/csp/ldsorg/css/common/content.css">
     <link rel="stylesheet" type="text/css" media="all" href="//edge.ldscdn.org/cdn2/csp/ldsorg/css/pages/scriptures.css">
-    
+
 </head>
 
 <body class="pf-responsive lang-spa narrow study-theme">
     <div id="platform" class="scriptures-study">
-        
+
 <!--googleoff: all-->
 
-	
+
 		<div class="pf-notice " id="">
 			Los menús de LDS.org han cambiado. <a href="/services/platformhttps, https://lds.org:443/church/news/new-ldsorg-navigation-menus-make-resources-easier-to-find?lang=spa">Más información.</a>
 			<a href="#d" class="pf-notice__closer"><span class="pf-notice__closer__icon">
@@ -33,7 +33,7 @@
 				<span class="pf-notice__closer__icon__text">cerrar</span>
 			</span></a>
 		</div>
-	
+
 
 <link rel="stylesheet" type="text/css" media="all" href="//edge.ldscdn.org/cdn2/common/ldslogo/spa.css">
 <a href="#platform-canvas-content" class="pf-offscreen">Saltar navegador principal</a>
@@ -43,7 +43,7 @@
 						<a href="//www.lds.org/?lang=spa" class="ldschurch-logotype">
 				<span class="ldschurch-logotype__text">La Iglesia de Jesucristo de los Santos de los Últimos Días</span>
 			</a>
-							
+
 											</div>
 			<nav class="pf-nav">
 				<div class="pf-top">
@@ -88,7 +88,7 @@
 	</ul>
 </div>
 </div>
-								
+
 							</div>
 						</li>
 					</ul>
@@ -251,28 +251,28 @@
             <h2><a href="https://www.lds.org/scriptures?lang=spa">Las Escrituras</a></h2><hr><ul>
                 <li>
                                 <a href="https://www.lds.org/scriptures/bible?lang=spa">Santa Biblia</a>
-                                
+
                             </li><li>
                                 <a href="https://www.lds.org/scriptures/bofm?lang=spa">El Libro de Mormón</a>
-                                
+
                             </li><li>
                                 <a href="https://www.lds.org/scriptures/dc-testament?lang=spa">Doctrina y Convenios</a>
-                                
+
                             </li><li class="active">
                                 <a href="https://www.lds.org/scriptures/pgp?lang=spa">La Perla de Gran Precio</a>
-                                
+
                             </li><li>
                                 <a href="https://www.lds.org/scriptures/study-helps?lang=spa">Ayudas para el estudio</a>
-                                
+
                             </li><li>
                                 <a href="https://www.lds.org/scriptures/formats?lang=spa">Formatos y descargas</a>
-                                
+
                             </li><li>
                                 <a href="https://www.lds.org/scriptures/search?lang=spa">Busca</a>
-                                
+
                             </li><li>
                                 <a href="https://www.lds.org/scriptures/adjustments?lang=spa">Ajustes</a>
-                                
+
                             </li>
                 </ul>
         </div>
@@ -309,14 +309,14 @@
                     <div id="secondary"><div id="top-shadow"><div id="bottom-shadow">
                         <div><form class="search-form" method="get" action="https://www.lds.org/scriptures/search" id="search" accept-charset="utf-8">
         <input type="hidden" name="lang" value="spa">
-        
+
         <input class="search-field" type="text" maxlength="150" name="query" placeholder="Busca en las Escrituras" title="Busca">
         <input class="search-button" type="image" src="/scriptures/resources/images/common/search-btn-icon.png">
     </form></div>
                         <div>
                             <ul class="tools">
-                                
-                                
+
+
                                 <li>
                                     <li>
             <a href="#share-list" class="share lds-popup">Comparte</a>
@@ -341,31 +341,31 @@
         </div><!-- end #platform-canvas -->
         <footer class="pf-footer" role="contentinfo">
 	<div class="pf-footer__cells">
-		
+
 <div class="pf-footer__cell pf-footer__linklist pf-footer__site-info">
         <ul>
                 <li>
                 <a href="//www.lds.org/help/sitemap?lang=spa" data-omniture="">
                     Mapa del sitio
-                    
-                    
+
+
                 </a>
             </li><li class="pf-feedback">
                 <a href="//www.lds.org/tools/feedback?lang=spa&amp;id=11340&amp;note=lds.org:homepage&amp;regarding=4078" data-omniture="">
                     Sugerencias
-                    
-                    
+
+
                 </a>
             </li><li>
                 <a href="//www.lds.org/help?lang=spa" data-omniture="">
                     Ayuda
-                    
-                    
+
+
                 </a>
             </li>
             </ul>
 </div>
-    
+
 
 
 	</div>
@@ -386,8 +386,8 @@
 			<div id="copyright-text">© 2016 por Intellectual Reserve, Inc. Todos los derechos reservados.</div>
 		</p>
 	</div>
-	
-		
+
+
 		<script data-pf="vars">
 		if (typeof(s) == 'undefined') {
 			var s = {};
@@ -405,7 +405,7 @@
 		Platform.cdn2Path = /**/"//edge.ldscdn.org/cdn2"/**/;
 		Platform.googleSearchKey = /**/"003638553136284313543:ggzwkbfuvd8"/**/;
 							</script>
-	
+
 	<script src="//edge.ldscdn.org/cdn2/csp/platform/scripts/platform5.js" data-pf="platformjs"> </script>
 </footer><script type="text/javascript">
         var channel = 'lds.org 3.0:scriptures:pgp:abr:fac-1';
@@ -413,7 +413,7 @@
         var locale = 'spa';
     </script><!-- SiteCatalyst code --><script type="text/javascript">
         <!-- /* Give each page an identifying name and channel on the next lines. */
-        var LDS = LDS || { }; 
+        var LDS = LDS || { };
         LDS.track = LDS.track || { };
         LDS.track.pageName = pageName;
         LDS.track.channel = channel;
@@ -429,8 +429,8 @@
         try { _satellite.pageBottom(); } catch (e) { };//-->
     </script>
     </div><!-- end #platform -->
-    
-    
+
+
     <!-- only scripts below -->
     <script type="text/javascript" src="//edge.ldscdn.org/cdn2/csp/ldsorg/script/common/content.js"> </script>
     <script type="text/javascript" src="//edge.ldscdn.org/cdn2/csp/ldsorg/script/pages/scriptures/context-bar.js"> </script>

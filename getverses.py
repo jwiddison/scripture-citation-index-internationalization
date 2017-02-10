@@ -58,6 +58,10 @@ tags_to_keep = [
     '<div eid="7" words="2" class="salutation">','<div eid="13" words="2" class="signature">','<div eid="14" words="3" class="signature">',
     '<div eid="15" words="2" class="signature">','<div eid="16" words="3" class="office">','<div eid="13" words="2" class="signature">',
     '</div>',
+    # For Facsimilies
+    '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">',
+    '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">',
+    '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">',
     # Other
     '<em>','</em>',
     '<span class="allCaps">',
@@ -300,19 +304,96 @@ def getVerses(path, fileName):
                 writeToCsvSpecialCase(path, fileName, verses)
                 return
 
-            elif fileName == "fac1?lang=spa":
+            elif fileName == "fac-1?lang=spa":
+                verses = re.search('<div\s+id="primary">(.*?)</div>', data).group(1)
+
+                fac_1_keep_contents = [
+                    '<table\s+class="definition">(.*?)</table>',
+                ]
+
+                fac_1_remove_contents = [
+                    '<page-break[^>]*?page="32"></page-break>',
+                    '<div[^>]*?class="verses\s+maps">',
+                    '<p>','</p>',
+                    '<div[^>]*?class="figure">',
+                    '<td>','</td>',
+                    '<tr>','</tr>',
+                    '<h2>','</h2>',
+                ]
+
+                # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
+                verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">', verses)
+                verses = cleanVerse(fac_1_keep_contents, fac_1_remove_contents, verses)
+                checkForRemainingTagsForSpecialCase(verses, path, fileName)
+                writeToCsvSpecialCase(path, fileName, verses)
                 return
 
-            elif fileName == "fac2?lang=spa":
+            elif fileName == "fac-2?lang=spa":
+                verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', data).group(1)
+
+                fac_2_keep_contents = [
+                    '<table\s+class="definition">(.*?)</table>',
+                    '<div[^>]*?class="figure">(.*?)</div>',
+                ]
+
+                fac_2_remove_contents = [
+                    '<page-break[^>]*?page="40"></page-break>',
+                    '<div[^>]*?class="verses\s+maps">',
+                    '<wbr></wbr>',
+                    '<p\s+uri="[^>]*?"\s+class="">',
+                    '<p>','</p>',
+                    '<td>','</td>',
+                    '<tr>','</tr>',
+                    '<h2>','</h2>',
+                    '<li[^>]*?class="prev">(.*?)</li>',
+                    '<li[^>]*?class="next">(.*?)</li>',
+                    '<ul[^>]*?>',
+                    '</div>',
+                ]
+
+                # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
+                verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">', verses)
+                verses = cleanVerse(fac_2_keep_contents, fac_2_remove_contents, verses)
+                checkForRemainingTagsForSpecialCase(verses, path, fileName)
+                writeToCsvSpecialCase(path, fileName, verses)
                 return
 
-            elif fileName == "fac3?lang=spa":
+            elif fileName == "fac-3?lang=spa":
+                verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', data).group(1)
+
+                fac_3_keep_contents = [
+                    '<table\s+class="definition">(.*?)</table>',
+                    '<div[^>]*?class="figure">(.*?)</div>',
+                ]
+
+                fac_3_remove_contents = [
+                    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+                    '</a>',
+                    '<page-break[^>]*?page="47"></page-break>',
+                    '<div[^>]*?class="verses\s+maps">',
+                    '<p\s+uri="[^>]*?"\s+class="">',
+                    '<p>','</p>',
+                    '<td>','</td>',
+                    '<tr>','</tr>',
+                    '<h2>','</h2>',
+                    '<li[^>]*?class="prev">(.*?)</li>',
+                    '<li[^>]*?class="next">(.*?)</li>',
+                    '<ul[^>]*?>',
+                    '</div>',
+                ]
+
+                # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
+                verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">', verses)
+                verses = cleanVerse(fac_3_keep_contents, fac_3_remove_contents, verses)
+                checkForRemainingTagsForSpecialCase(verses, path, fileName)
+                writeToCsvSpecialCase(path, fileName, verses)
                 return
 
             # elif path.endswith('ps') and fileName == "119?lang=spa":
             elif fileName == "119?lang=spa":
                 verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.*?)</span>[^<]*?</p>[^<]*?</div>[^<]*?</div>', data).group(1)
                 # TODO: Gonna have to handle psalm 119 manually.
+                return
         else:
             try:
                 verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
