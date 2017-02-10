@@ -45,35 +45,36 @@ general_patterns_remove_contents = [
 
 # All the tags that should be left over after cleaning
 tags_to_keep = [
-    # # Signatures for 3 Witnesses
-    # '<div eid="2" words="2" class="signature">', '<div eid="3" words="2" class="signature">', '<div eid="4" words="2" class="signature">',
-    # # Signatures for 8 Witnesses
-    # '<div eid="4" words="3" class="signature">','<div eid="5" words="2" class="signature">','<div eid="5" words="3" class="signature">',
-    # '<div eid="6" words="2" class="signature">','<div eid="7" words="3" class="signature">','<div eid="8" words="2" class="signature">',
-    # '<div eid="9" words="2" class="signature">',
-    # # For OD 1
-    # '<div eid="1" words="3" class="salutation">', '<div eid="7" words="2" class="signature">',
-    # '<div eid="8" words="13" class="office">', '<div eid="7" words="2" class="signature">',
-    # # For OD 2
-    #
-    #
-    # '</div>',
-    # '<em>','</em>',
-    # '<span class="allCaps">',
-    # '<span class="smallCaps">',
-    # '<span class="answer">',
-    # '<span class="question">',
-    # '<span class="line">',
-    # '</span>',
+    # Signatures for 3 Witnesses
+    '<div eid="2" words="2" class="signature">', '<div eid="3" words="2" class="signature">', '<div eid="4" words="2" class="signature">',
+    # Signatures for 8 Witnesses
+    '<div eid="4" words="3" class="signature">','<div eid="5" words="2" class="signature">','<div eid="5" words="3" class="signature">',
+    '<div eid="6" words="2" class="signature">','<div eid="7" words="3" class="signature">','<div eid="8" words="2" class="signature">',
+    '<div eid="9" words="2" class="signature">',
+    # For OD 1
+    '<div eid="1" words="3" class="salutation">', '<div eid="7" words="2" class="signature">',
+    '<div eid="8" words="13" class="office">', '<div eid="7" words="2" class="signature">',
+    # For OD 2
+    '<div eid="7" words="2" class="salutation">','<div eid="13" words="2" class="signature">','<div eid="14" words="3" class="signature">',
+    '<div eid="15" words="2" class="signature">','<div eid="16" words="3" class="office">','<div eid="13" words="2" class="signature">',
+    '</div>',
+    # Other
+    '<em>','</em>',
+    '<span class="allCaps">',
+    '<span class="smallCaps">',
+    '<span class="answer">',
+    '<span class="question">',
+    '<span class="line">',
+    '</span>',
 ]
 
 # The filenames for each file that has to be processed individually.
+#TODO: Put these back to their normal filenames
 special_case_filenames = [
     'bofm-title?lang=spa',
     'eight?lang=spa',
-    'bofmintroduction?lang=spa',
-    # 'introduction?lang=spa',
-    #TODO: Uncomment above and delete line below this.
+    'bintroduction?lang=spa',
+    'introduction?lang=spa',
     'three?lang=spa',
     'dcintroduction?lang=spa',
     'od1?lang=spa',
@@ -109,12 +110,9 @@ def cleanVerse(patterns_keep_contents, patterns_delete_contents, string_to_clean
         capture_group = re.search(pattern, string_to_clean)
         if capture_group:
             string_to_clean = re.sub(pattern, capture_group.group(1), string_to_clean)
-
     for pattern in patterns_delete_contents:
         string_to_clean = re.sub(pattern, '', string_to_clean)
-
     string_to_clean = re.sub('^\s\s+', '', string_to_clean) # Remove all leading whitespace
-
     return string_to_clean
 
 
@@ -124,8 +122,9 @@ def checkForRemainingTagsForSpecialCase(verse_to_check, path, fileName):
         if tag not in tags_to_keep:
             print('%s/%s also contains %s' % (path, fileName, tag))
 
+
 def checkFormRemainingTags(verse_to_check, index, path, fileName):
-    all_other_tags = re.findall('<[^>]*?>', verse)
+    all_other_tags = re.findall('<[^>]*?>', verse_to_check)
     for tag in all_other_tags:
         if tag not in tags_to_keep:
             print('%s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1))
@@ -142,16 +141,6 @@ def writeToCsvSpecialCase(path, fileName, verses):
     with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
         writer.writerow({'Verse': 1, 'Text': verses})
-
-special_case_remove_tags_keep_contents = [
-    # '<div[^>]*?class="studyIntro">(.*?)</div>',
-    # '<span[^>]*?class="language[^>]*?>(.*?)</span>',
-    # # '<div[^>]*?class="topic">(.*?)</div>',
-    # # '<div[^>]*?class="addressee">(.*?)</div>',
-    # '<div[^>]*?class="figure">(.*?)</div>',
-    # # '<li[^>]*?>(.*?)</li>',
-
-]
 
 
 def getVerses(path, fileName):
@@ -285,13 +274,14 @@ def getVerses(path, fileName):
                 verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
 
                 od_2_keep_contents = [
-                    # '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
-                    # '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-                    # '<div[^>]*?class="openingBlock">(.*?)</div>',
-                    # '<div[^>]*?class="closingBlock">(.*?)</div>',
                     '<h2>(.*?)</h2>',
                     '<div[^>]*?class="studyIntro">(.*?)</div>',
+                    '<div[^>]*?class="addressee">(.*?)</div>',
                     '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                    '<div[^>]*?class="closing">(.*?)</div>',
+                    '<div[^>]*?class="closingBlock">(.*?)</div>',
+                    '<div[^>]*?class="openingBlock">(.*?)</div>',
+
                 ]
 
                 od_2_remove_contents = [
@@ -299,13 +289,13 @@ def getVerses(path, fileName):
                     '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
                     '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
                     '</a>',
-                    # '<div[^>]*?class="topic">',
                     '<p>','</p>',
-
+                    '<li[^>]*?class="prev">(.*?)</li>',
+                    '<li[^>]*?class="next">(.*?)</li>',
+                    '<ul[^>]*?>',
                 ]
 
                 verses = cleanVerse(od_2_keep_contents, od_2_remove_contents, verses)
-                print(verses)
                 checkForRemainingTagsForSpecialCase(verses, path, fileName)
                 writeToCsvSpecialCase(path, fileName, verses)
                 return
@@ -321,8 +311,8 @@ def getVerses(path, fileName):
 
             # elif path.endswith('ps') and fileName == "119?lang=spa":
             elif fileName == "119?lang=spa":
-                return
-
+                verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.*?)</span>[^<]*?</p>[^<]*?</div>[^<]*?</div>', data).group(1)
+                # TODO: Gonna have to handle psalm 119 manually.
         else:
             try:
                 verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
@@ -357,22 +347,10 @@ def getVerses(path, fileName):
             for index, verse in enumerate(verse_html):
                 verse = cleanVerse(general_patterns_keep_contents, general_patterns_remove_contents, verse)
                 checkFormRemainingTags(verse, index, path, fileName)
-
-                # # Check if there are any other html tags not accounted for
-                # all_other_tags = re.findall('<[^>]*?>', verse)
-                # for tag in all_other_tags:
-                #     if tag not in tags_to_keep:
-                #         print('%s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1))
-
-
                 verse_texts.append(verse)
 
             writeToCsv(path, fileName, verse_texts)
 
-        # with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
-        #     writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
-        #     for index, verse in enumerate(verse_texts):
-        #         writer.writerow({'Verse': index + 1, 'Text': verse})
 
 # ---------------------------------------------------------------------------------------------------------------------- #
 # ----------------------------------------------- COMMAND LINE INTERFACE ----------------------------------------------- #
@@ -382,7 +360,7 @@ def getVerses(path, fileName):
 language_string = '?lang=spa'
 
 # path_to_dir = input("\nPlease input the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
-
+#
 # if path_to_dir == '.':
 #     print('\n-- The following are all chapter files in the current directory: --\n')
 # else:
@@ -418,8 +396,9 @@ if choice == '1':
     try:
         getVerses(path_to_dir, filename)
     except:
-        print('Unable to convert: ' + path_to_dir + '/' + filename)
+        print('Unable to convert: %s/%s' % (path_to_dir, filename))
 
+# TODO: Put the try/catches back in below.
 elif choice == '2':
     for name in os.listdir(path_to_dir):
         if name.endswith(language_string):
