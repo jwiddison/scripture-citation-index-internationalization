@@ -72,23 +72,6 @@ tags_to_keep = [
     '</span>',
 ]
 
-# The filenames for each file that has to be processed individually.
-#TODO: Put these back to their normal filenames
-special_case_filenames = [
-    'bofm-title?lang=spa',
-    'eight?lang=spa',
-    'bintroduction?lang=spa',
-    'introduction?lang=spa',
-    'three?lang=spa',
-    'dcintroduction?lang=spa',
-    'od1?lang=spa',
-    'od2?lang=spa',
-    '119?lang=spa',
-    'fac-1?lang=spa',
-    'fac-2?lang=spa',
-    'fac-3?lang=spa',
-]
-
 # The special-case tags for the 2 witnesses sections (they're the same)
 witnesses_keep_contents = [
     '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
@@ -151,249 +134,251 @@ def getVerses(path, fileName):
     with open('%s/%s' % (path, fileName), 'r') as html:
         data = html.read().replace('\n', ' ')
 
+        # Skip Table of Contents files for each volume
         if fileName in toc_files_to_skip:
             return
-        elif fileName in special_case_filenames:
-            # if path.endswith('bofm') and fileName == 'bofm-title?lang=spa':
-            if fileName == 'bofm-title?lang=spa':
-                verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
 
-                bofm_title_keep_contents = [
-                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-                    '<div[^>]*?class="subtitle">(.*?)</div>',
-                    '<span[^>]*?class="dominant">(.*?)</span>',
-                    '<div[^>]*?class="closingBlock">(.*?)</div>',
-                    '<div[^>]*?class="closing">(.*?)</div>',
-                ]
+        # Handle Special Cases
+        if fileName == 'bofm-title?lang=spa':
+            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
 
-                bofm_title_remove_contents = [
-                    '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
-                    '<div[^>]*?id="media">(.*?)</div>',
-                    '<li[^>]*?class="prev">(.*?)</li>',
-                    '<li[^>]*?class="next">(.*?)</li>',
-                    '<ul[^>]*?>',
-                    '<p>',
-                    '</p>',
-                ]
+            bofm_title_keep_contents = [
+                '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                '<div[^>]*?class="subtitle">(.*?)</div>',
+                '<span[^>]*?class="dominant">(.*?)</span>',
+                '<div[^>]*?class="closingBlock">(.*?)</div>',
+                '<div[^>]*?class="closing">(.*?)</div>',
+            ]
 
-                verses = cleanVerse(bofm_title_keep_contents, bofm_title_remove_contents, verses)
-                checkForRemainingTagsForSpecialCase(verses, path, fileName)
-                writeToCsvSpecialCase(path, fileName, verses)
-                return
+            bofm_title_remove_contents = [
+                '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                '<div[^>]*?id="media">(.*?)</div>',
+                '<li[^>]*?class="prev">(.*?)</li>',
+                '<li[^>]*?class="next">(.*?)</li>',
+                '<ul[^>]*?>',
+                '<p>',
+                '</p>',
+            ]
 
-            elif fileName == 'bofmintroduction?lang=spa':
-                verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
+            verses = cleanVerse(bofm_title_keep_contents, bofm_title_remove_contents, verses)
+            checkForRemainingTagsForSpecialCase(verses, path, fileName)
+            writeToCsvSpecialCase(path, fileName, verses)
+            return
 
-                bofm_intro_keep_contents = [
-                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-                ]
+        elif path.endswith('bofm') and fileName == 'introduction?lang=spa':
+            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
 
-                bofm_intro_remove_contents = [
-                    '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
-                    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-                    '</a>',
-                    '<div[^>]*?id="media">(.*?)</div>',
-                    '<li[^>]*?class="prev">(.*?)</li>',
-                    '<li[^>]*?class="next">(.*?)</li>',
-                    '<ul[^>]*?>',
-                    '<p>',
-                    '</p>',
-                ]
+            bofm_intro_keep_contents = [
+                '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+            ]
 
-                verses = cleanVerse(bofm_intro_keep_contents, bofm_intro_remove_contents, verses)
-                checkForRemainingTagsForSpecialCase(verses, path, fileName)
-                writeToCsvSpecialCase(path, fileName, verses)
-                return
+            bofm_intro_remove_contents = [
+                '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+                '</a>',
+                '<div[^>]*?id="media">(.*?)</div>',
+                '<li[^>]*?class="prev">(.*?)</li>',
+                '<li[^>]*?class="next">(.*?)</li>',
+                '<ul[^>]*?>',
+                '<p>',
+                '</p>',
+            ]
 
-            elif fileName == 'three?lang=spa':
-                verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
-                verses = cleanVerse(witnesses_keep_contents, witnesses_remove_contents, verses)
-                checkForRemainingTagsForSpecialCase(verses, path, fileName)
-                writeToCsvSpecialCase(path, fileName, verses)
-                return
+            verses = cleanVerse(bofm_intro_keep_contents, bofm_intro_remove_contents, verses)
+            checkForRemainingTagsForSpecialCase(verses, path, fileName)
+            writeToCsvSpecialCase(path, fileName, verses)
+            return
 
-            elif fileName == 'eight?lang=spa':
-                verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
-                verses = cleanVerse(witnesses_keep_contents, witnesses_remove_contents, verses)
-                checkForRemainingTagsForSpecialCase(verses, path, fileName)
-                writeToCsvSpecialCase(path, fileName, verses)
-                return
+        elif fileName == 'three?lang=spa':
+            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
+            verses = cleanVerse(witnesses_keep_contents, witnesses_remove_contents, verses)
+            checkForRemainingTagsForSpecialCase(verses, path, fileName)
+            writeToCsvSpecialCase(path, fileName, verses)
+            return
 
-            elif fileName == 'dcintroduction?lang=spa':
-                # TODO: Check and make sure this one is actually working.  Check text against itself.
-                verses = re.search('<div\s+id="primary">(.*?)</p>[^<]*?</div>', data).group(1)
+        elif fileName == 'eight?lang=spa':
+            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
+            verses = cleanVerse(witnesses_keep_contents, witnesses_remove_contents, verses)
+            checkForRemainingTagsForSpecialCase(verses, path, fileName)
+            writeToCsvSpecialCase(path, fileName, verses)
+            return
 
-                dc_intro_keep_contents = [
-                    '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
-                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-                    '<div[^>]*?id="media">(.*?)</div>',
-                    '<div[^>]*?class="preamble">(.*?)</div>',
-                    '<h2>(.*?)</h2>',
+        elif path.endswith('dc-testament') and fileName == 'introduction?lang=spa':
+            verses = re.search('<div\s+id="primary">(.*?)</p>[^<]*?</div>', data).group(1)
 
-                ]
+            dc_intro_keep_contents = [
+                '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
+                '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                '<div[^>]*?id="media">(.*?)</div>',
+                '<div[^>]*?class="preamble">(.*?)</div>',
+                '<h2>(.*?)</h2>',
 
-                dc_intro_remove_contents = [
-                    '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
-                    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">',
-                    '<div[^>]*?class="topic">',
-                    '</a>',
-                    '<p>','</p>',
-                    '<li>','</li>',
-                    '<ul[^>]*?>',
-                ]
+            ]
 
-                verses = cleanVerse(dc_intro_keep_contents, dc_intro_remove_contents, verses)
-                checkForRemainingTagsForSpecialCase(verses, path, fileName)
-                writeToCsvSpecialCase(path, fileName, verses)
-                return
+            dc_intro_remove_contents = [
+                '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+                '<div[^>]*?class="article"[^>]*?id="[^>]*?">',
+                '<div[^>]*?class="topic">',
+                '</a>',
+                '<p>','</p>',
+                '<li>','</li>',
+                '<ul[^>]*?>',
+            ]
 
-            elif fileName == "od1?lang=spa":
-                verses = re.search('<div\s+id="primary">(.*?)</p>[^<]*?</div>', data).group(1)
+            verses = cleanVerse(dc_intro_keep_contents, dc_intro_remove_contents, verses)
+            checkForRemainingTagsForSpecialCase(verses, path, fileName)
+            writeToCsvSpecialCase(path, fileName, verses)
+            return
 
-                od_1_keep_contents = [
-                    '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
-                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-                    '<div[^>]*?class="openingBlock">(.*?)</div>',
-                    '<div[^>]*?class="closingBlock">(.*?)</div>',
-                    '<div[^>]*?class="studyIntro">(.*?)</div>',
-                    '<h2>(.*?)</h2>',
-                ]
+        elif path.endswith('od') and fileName == "1?lang=spa":
+            verses = re.search('<div\s+id="primary">(.*?)</p>[^<]*?</div>', data).group(1)
 
-                od_1_remove_contents = [
-                    '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
-                    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-                    '</a>',
-                    '<div[^>]*?class="topic">',
-                    '<div[^>]*?id="media">(.*?)</div>',
-                    '<p>','</p>',
-                ]
+            od_1_keep_contents = [
+                '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
+                '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                '<div[^>]*?class="openingBlock">(.*?)</div>',
+                '<div[^>]*?class="closingBlock">(.*?)</div>',
+                '<div[^>]*?class="studyIntro">(.*?)</div>',
+                '<h2>(.*?)</h2>',
+            ]
 
-                verses = cleanVerse(od_1_keep_contents, od_1_remove_contents, verses)
-                checkForRemainingTagsForSpecialCase(verses, path, fileName)
-                writeToCsvSpecialCase(path, fileName, verses)
-                return
+            od_1_remove_contents = [
+                '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+                '</a>',
+                '<div[^>]*?class="topic">',
+                '<div[^>]*?id="media">(.*?)</div>',
+                '<p>','</p>',
+            ]
 
-            elif fileName == "od2?lang=spa":
-                verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
+            verses = cleanVerse(od_1_keep_contents, od_1_remove_contents, verses)
+            checkForRemainingTagsForSpecialCase(verses, path, fileName)
+            writeToCsvSpecialCase(path, fileName, verses)
+            return
 
-                od_2_keep_contents = [
-                    '<h2>(.*?)</h2>',
-                    '<div[^>]*?class="studyIntro">(.*?)</div>',
-                    '<div[^>]*?class="addressee">(.*?)</div>',
-                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-                    '<div[^>]*?class="closing">(.*?)</div>',
-                    '<div[^>]*?class="closingBlock">(.*?)</div>',
-                    '<div[^>]*?class="openingBlock">(.*?)</div>',
+        elif path.endswith('od') and fileName == "2?lang=spa":
+            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
 
-                ]
+            od_2_keep_contents = [
+                '<h2>(.*?)</h2>',
+                '<div[^>]*?class="studyIntro">(.*?)</div>',
+                '<div[^>]*?class="addressee">(.*?)</div>',
+                '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                '<div[^>]*?class="closing">(.*?)</div>',
+                '<div[^>]*?class="closingBlock">(.*?)</div>',
+                '<div[^>]*?class="openingBlock">(.*?)</div>',
 
-                od_2_remove_contents = [
-                    '<div[^>]*?id="media">(.*?)</div>',
-                    '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
-                    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-                    '</a>',
-                    '<p>','</p>',
-                    '<li[^>]*?class="prev">(.*?)</li>',
-                    '<li[^>]*?class="next">(.*?)</li>',
-                    '<ul[^>]*?>',
-                ]
+            ]
 
-                verses = cleanVerse(od_2_keep_contents, od_2_remove_contents, verses)
-                checkForRemainingTagsForSpecialCase(verses, path, fileName)
-                writeToCsvSpecialCase(path, fileName, verses)
-                return
+            od_2_remove_contents = [
+                '<div[^>]*?id="media">(.*?)</div>',
+                '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+                '</a>',
+                '<p>','</p>',
+                '<li[^>]*?class="prev">(.*?)</li>',
+                '<li[^>]*?class="next">(.*?)</li>',
+                '<ul[^>]*?>',
+            ]
 
-            elif fileName == "fac-1?lang=spa":
-                verses = re.search('<div\s+id="primary">(.*?)</div>', data).group(1)
+            verses = cleanVerse(od_2_keep_contents, od_2_remove_contents, verses)
+            checkForRemainingTagsForSpecialCase(verses, path, fileName)
+            writeToCsvSpecialCase(path, fileName, verses)
+            return
 
-                fac_1_keep_contents = [
-                    '<table\s+class="definition">(.*?)</table>',
-                ]
+        elif fileName == "fac-1?lang=spa":
+            verses = re.search('<div\s+id="primary">(.*?)</div>', data).group(1)
 
-                fac_1_remove_contents = [
-                    '<page-break[^>]*?page="32"></page-break>',
-                    '<div[^>]*?class="verses\s+maps">',
-                    '<p>','</p>',
-                    '<div[^>]*?class="figure">',
-                    '<td>','</td>',
-                    '<tr>','</tr>',
-                    '<h2>','</h2>',
-                ]
+            fac_1_keep_contents = [
+                '<table\s+class="definition">(.*?)</table>',
+            ]
 
-                # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
-                verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">', verses)
-                verses = cleanVerse(fac_1_keep_contents, fac_1_remove_contents, verses)
-                checkForRemainingTagsForSpecialCase(verses, path, fileName)
-                writeToCsvSpecialCase(path, fileName, verses)
-                return
+            fac_1_remove_contents = [
+                '<page-break[^>]*?page="32"></page-break>',
+                '<div[^>]*?class="verses\s+maps">',
+                '<p>','</p>',
+                '<div[^>]*?class="figure">',
+                '<td>','</td>',
+                '<tr>','</tr>',
+                '<h2>','</h2>',
+            ]
 
-            elif fileName == "fac-2?lang=spa":
-                verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', data).group(1)
+            # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
+            verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">', verses)
+            verses = cleanVerse(fac_1_keep_contents, fac_1_remove_contents, verses)
+            checkForRemainingTagsForSpecialCase(verses, path, fileName)
+            writeToCsvSpecialCase(path, fileName, verses)
+            return
 
-                fac_2_keep_contents = [
-                    '<table\s+class="definition">(.*?)</table>',
-                    '<div[^>]*?class="figure">(.*?)</div>',
-                ]
+        elif fileName == "fac-2?lang=spa":
+            verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', data).group(1)
 
-                fac_2_remove_contents = [
-                    '<page-break[^>]*?page="40"></page-break>',
-                    '<div[^>]*?class="verses\s+maps">',
-                    '<wbr></wbr>',
-                    '<p\s+uri="[^>]*?"\s+class="">',
-                    '<p>','</p>',
-                    '<td>','</td>',
-                    '<tr>','</tr>',
-                    '<h2>','</h2>',
-                    '<li[^>]*?class="prev">(.*?)</li>',
-                    '<li[^>]*?class="next">(.*?)</li>',
-                    '<ul[^>]*?>',
-                    '</div>',
-                ]
+            fac_2_keep_contents = [
+                '<table\s+class="definition">(.*?)</table>',
+                '<div[^>]*?class="figure">(.*?)</div>',
+            ]
 
-                # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
-                verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">', verses)
-                verses = cleanVerse(fac_2_keep_contents, fac_2_remove_contents, verses)
-                checkForRemainingTagsForSpecialCase(verses, path, fileName)
-                writeToCsvSpecialCase(path, fileName, verses)
-                return
+            fac_2_remove_contents = [
+                '<page-break[^>]*?page="40"></page-break>',
+                '<div[^>]*?class="verses\s+maps">',
+                '<wbr></wbr>',
+                '<p\s+uri="[^>]*?"\s+class="">',
+                '<p>','</p>',
+                '<td>','</td>',
+                '<tr>','</tr>',
+                '<h2>','</h2>',
+                '<li[^>]*?class="prev">(.*?)</li>',
+                '<li[^>]*?class="next">(.*?)</li>',
+                '<ul[^>]*?>',
+                '</div>',
+            ]
 
-            elif fileName == "fac-3?lang=spa":
-                verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', data).group(1)
+            # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
+            verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">', verses)
+            verses = cleanVerse(fac_2_keep_contents, fac_2_remove_contents, verses)
+            checkForRemainingTagsForSpecialCase(verses, path, fileName)
+            writeToCsvSpecialCase(path, fileName, verses)
+            return
 
-                fac_3_keep_contents = [
-                    '<table\s+class="definition">(.*?)</table>',
-                    '<div[^>]*?class="figure">(.*?)</div>',
-                ]
+        elif fileName == "fac-3?lang=spa":
+            verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', data).group(1)
 
-                fac_3_remove_contents = [
-                    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-                    '</a>',
-                    '<page-break[^>]*?page="47"></page-break>',
-                    '<div[^>]*?class="verses\s+maps">',
-                    '<p\s+uri="[^>]*?"\s+class="">',
-                    '<p>','</p>',
-                    '<td>','</td>',
-                    '<tr>','</tr>',
-                    '<h2>','</h2>',
-                    '<li[^>]*?class="prev">(.*?)</li>',
-                    '<li[^>]*?class="next">(.*?)</li>',
-                    '<ul[^>]*?>',
-                    '</div>',
-                ]
+            fac_3_keep_contents = [
+                '<table\s+class="definition">(.*?)</table>',
+                '<div[^>]*?class="figure">(.*?)</div>',
+            ]
 
-                # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
-                verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">', verses)
-                verses = cleanVerse(fac_3_keep_contents, fac_3_remove_contents, verses)
-                checkForRemainingTagsForSpecialCase(verses, path, fileName)
-                writeToCsvSpecialCase(path, fileName, verses)
-                return
+            fac_3_remove_contents = [
+                '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+                '</a>',
+                '<page-break[^>]*?page="47"></page-break>',
+                '<div[^>]*?class="verses\s+maps">',
+                '<p\s+uri="[^>]*?"\s+class="">',
+                '<p>','</p>',
+                '<td>','</td>',
+                '<tr>','</tr>',
+                '<h2>','</h2>',
+                '<li[^>]*?class="prev">(.*?)</li>',
+                '<li[^>]*?class="next">(.*?)</li>',
+                '<ul[^>]*?>',
+                '</div>',
+            ]
 
-            # elif path.endswith('ps') and fileName == "119?lang=spa":
-            elif fileName == "119?lang=spa":
-                verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.*?)</span>[^<]*?</p>[^<]*?</div>[^<]*?</div>', data).group(1)
-                # TODO: Gonna have to handle psalm 119 manually.
-                return
+            # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
+            verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">', verses)
+            verses = cleanVerse(fac_3_keep_contents, fac_3_remove_contents, verses)
+            checkForRemainingTagsForSpecialCase(verses, path, fileName)
+            writeToCsvSpecialCase(path, fileName, verses)
+            return
+
+        elif path.endswith('ps') and fileName == "119?lang=spa":
+            verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.*?)</span>[^<]*?</p>[^<]*?</div>[^<]*?</div>', data).group(1)
+            # TODO: Still need to fix Psalm 119
+            print('PSALM 119 NOT YET WORKING')
+            raise
+
+        # Handle All Other Files Besides Special Cases
         else:
             try:
                 verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
@@ -401,36 +386,35 @@ def getVerses(path, fileName):
                 print('Verses not found in %s/%s. Please Handle Manually' % (path, fileName))
                 return
 
-            # Get sub-string index for each verse number
-            verse_number_locations = []
-            for index in re.finditer('<span class="verse">', verses):
-                verse_number_locations.append(index.end() + 1)
+        # Get sub-string index for each verse number
+        verse_number_locations = []
+        for index in re.finditer('<span class="verse">', verses):
+            verse_number_locations.append(index.end() + 1)
 
-            # Get index for the beginning of each verse
-            verse_text_end_locations = []
-            for index in re.finditer('</p>', verses):
-                verse_text_end_locations.append(index.start())
+        # Get index for the beginning of each verse
+        verse_text_end_locations = []
+        for index in re.finditer('</p>', verses):
+            verse_text_end_locations.append(index.start())
 
-            # Get index for the end of each verse
-            verse_text_start_locations = []
-            for index in range(len(verse_number_locations)):
-                location = verses.find('</span>', verse_number_locations[index])
-                verse_text_start_locations.append(location + len('</span>'))
+        # Get index for the end of each verse
+        verse_text_start_locations = []
+        for index in range(len(verse_number_locations)):
+            location = verses.find('</span>', verse_number_locations[index])
+            verse_text_start_locations.append(location + len('</span>'))
 
-            verse_html = [] # To hold raw HTML for verse
-            verse_texts = [] # To hold cleaned text for verse
+        verse_html = [] # To hold raw HTML for verse
+        verse_texts = [] # To hold cleaned text for verse
 
-            # Get raw HTML for verses using string slicing
-            for index in range(len(verse_number_locations)):
-                verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
+        # Get raw HTML for verses using string slicing
+        for index in range(len(verse_number_locations)):
+            verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
 
-            # Clean HTML
-            for index, verse in enumerate(verse_html):
-                verse = cleanVerse(general_patterns_keep_contents, general_patterns_remove_contents, verse)
-                checkFormRemainingTags(verse, index, path, fileName)
-                verse_texts.append(verse)
+        for index, verse in enumerate(verse_html):
+            verse = cleanVerse(general_patterns_keep_contents, general_patterns_remove_contents, verse)
+            checkFormRemainingTags(verse, index, path, fileName)
+            verse_texts.append(verse)
 
-            writeToCsv(path, fileName, verse_texts)
+        writeToCsv(path, fileName, verse_texts)
 
 
 # ---------------------------------------------------------------------------------------------------------------------- #
@@ -440,15 +424,12 @@ def getVerses(path, fileName):
 # print('\nCurrently using \'spa\' for language code.  Change in script if desired.')
 language_string = '?lang=spa'
 
-# path_to_dir = input("\nPlease input the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
-#
-# if path_to_dir == '.':
-#     print('\n-- The following are all chapter files in the current directory: --\n')
-# else:
-#     print('\n-- The following are all chapter files in the directory /%s: --\n' % path_to_dir)
+path_to_dir = input("\nPlease input the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
 
-# TODO: Uncomment above and delete this
-path_to_dir = 'special'
+if path_to_dir == '.':
+    print('\n-- The following are all chapter files in the current directory: --\n')
+else:
+    print('\n-- The following are all chapter files in the directory /%s: --\n' % path_to_dir)
 
 for name in os.listdir(path_to_dir):
     if name.endswith(language_string):
@@ -479,17 +460,20 @@ if choice == '1':
     except:
         print('Unable to convert: %s/%s' % (path_to_dir, filename))
 
-# TODO: Put the try/catches back in below.
 elif choice == '2':
     for name in os.listdir(path_to_dir):
         if name.endswith(language_string):
-            # try:
-            getVerses(path_to_dir, name)
-            # except:
-            #     print('Unable to convert: ' + path_to_dir + '/' + name)
+            try:
+                getVerses(path_to_dir, name)
+            except:
+                print('Unable to convert: %s/%s' % (path_to_dir, name))
 
 elif choice == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for file in files:
             if file.endswith(language_string):
-                getVerses(subdir, file)
+                try:
+                    getVerses(subdir, file)
+                    print('%s/%s DONE' % (subdir, file))
+                except:
+                    print('Unable to convert: %s/%s' % (subdir, file))
