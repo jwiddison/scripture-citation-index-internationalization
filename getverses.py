@@ -4,8 +4,11 @@ import re
 import os
 import csv
 
-# Constants
+# ---------------------------------------------------------------------------------------------------------------------- #
+# ----------------------------------------------------  CONSTANTS ------------------------------------------------------ #
+# ---------------------------------------------------------------------------------------------------------------------- #
 
+# These are all the patterns we want remove without removing their contents.
 regex_patterns_keep_contents = [
     '<a[^>]*?>(.*?)</a>',
     '<div[^>]*?class="closing">(.*?)</div>',
@@ -22,6 +25,7 @@ regex_patterns_keep_contents = [
     '<span>(.*?)</span>', # Added for Italian
 ]
 
+# Patterns to delete where we don't want to keep their contents
 regex_patterns_delete_contents = [
     '<sup[^>]*?class="studyNoteMarker">(.*?)</sup>',
     '<span[^>]*?class="verse">[0-9]</span>',
@@ -31,6 +35,7 @@ regex_patterns_delete_contents = [
     '<span[^>]*?class="translit"[^>]*?xml:lang="he">(.*?)</span>',
 ]
 
+# All the tags that should be left over after cleaning
 tags_to_keep = [
     '<div eid="" words="2" class="signature">',
     '</div>',
@@ -44,6 +49,7 @@ tags_to_keep = [
     '</span>',
 ]
 
+# The filenames for each file that has to be processed individually.
 special_case_filenames = [
     'bofm-title?lang=spa',
     'eight?lang=spa',
@@ -60,38 +66,56 @@ special_case_filenames = [
     'fac-3?lang=spa',
 ]
 
+# ---------------------------------------------------------------------------------------------------------------------- #
+# -----------------------------------------------------  HELPERS  ------------------------------------------------------ #
+# ---------------------------------------------------------------------------------------------------------------------- #
+
+def cleanVerse(patterns_keep_contents, patterns_delete_contents, string_to_clean):
+    for pattern in patterns_keep_contents:
+        capture_group = re.search(pattern, string_to_clean)
+        if capture_group:
+            string_to_clean = re.sub(pattern, capture_group.group(1), string_to_clean)
+
+    for pattern in patterns_delete_contents:
+        string_to_clean = re.sub(pattern, '', string_to_clean)
+
+    return string_to_clean
+
+
+def checkForRemainingTags(verse_to_check, path, fileName):
+    all_other_tags = re.findall('<[^>]*?>', verse_to_check)
+    for tag in all_other_tags:
+        if tag not in tags_to_keep:
+            print('%s/%s also contains %s' % (path, fileName, tag))
+
+
+def writeToCsv(path, fileName, verse_texts):
+    with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
+        for index, verse in enumerate(verse_texts):
+            writer.writerow({'Verse': index + 1, 'Text': verse})
+
+
+def writeToCsvSpecialCase(path, fileName, verses):
+    with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
+        writer.writerow({'Verse': 1, 'Text': verses})
+
 special_case_remove_tags_keep_contents = [
-    # '<div[^>]*?class="subtitle">(.*?)</div>',
     # '<div[^>]*?class="studyIntro">(.*?)</div>',
-    '<span[^>]*?class="dominant">(.*?)</span>',
-    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-    # '<div[^>]*?class="openingBlock">(.*?)</div>',
-    # '<div[^>]*?class="closingBlock">(.*?)</div>',
-    '<div[^>]*?class="closing">(.*?)</div>',
-    '<span[^>]*?class="language[^>]*?>(.*?)</span>',
-    # '<div[^>]*?class="topic">(.*?)</div>',
-    # '<div[^>]*?class="addressee">(.*?)</div>',
-    '<div[^>]*?class="preamble">(.*?)</div>',
-    '<div[^>]*?class="figure">(.*?)</div>',
-    # '<li[^>]*?>(.*?)</li>',
+    # # '<div[^>]*?class="openingBlock">(.*?)</div>',
+    # '<span[^>]*?class="language[^>]*?>(.*?)</span>',
+    # # '<div[^>]*?class="topic">(.*?)</div>',
+    # # '<div[^>]*?class="addressee">(.*?)</div>',
+    # '<div[^>]*?class="preamble">(.*?)</div>',
+    # '<div[^>]*?class="figure">(.*?)</div>',
+    # # '<li[^>]*?>(.*?)</li>',
 
 ]
 
 special_case_remove_tags_and_contents = [
-    '<div[^>]*?id="media">(.*?)</div>',
-    '<ul[^>]*?>(.*?)</ul>',
-    '<li[^>]*?class="prev">(.*?)</li>',
-    '<li[^>]*?class="next">(.*?)</li>',
-    '<ul[^>]*?>',
-    '<p>',
-    '</p>',
-    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-    '<a[^>]*?>',
-    '</a>',
-    '<h2>',
-    '</h2>',
-    '<li>',
-    '</li>',
+    # '<ul[^>]*?>(.*?)</ul>',
+    # '<a[^>]*?>',
 ]
 
 
@@ -100,38 +124,85 @@ def getVerses(path, fileName):
         data = html.read().replace('\n', ' ')
 
         if fileName in special_case_filenames:
-            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
-            # print('------------------BEFORE CLEANING---------------------')
-            # print(verses)
+            # if path.endswith('bofm') and fileName == 'bofm-title?lang=spa':
+            if fileName == 'bofm-title?lang=spa':
+                verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
 
-            # verses = re.sub('\s\s+', '', verses)
+                bofm_title_keep_contents = [
+                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                    '<div[^>]*?class="subtitle">(.*?)</div>',
+                    '<span[^>]*?class="dominant">(.*?)</span>',
+                    '<div[^>]*?class="closingBlock">(.*?)</div>',
+                    '<div[^>]*?class="closing">(.*?)</div>',
+                ]
 
-            for pattern in special_case_remove_tags_keep_contents:
-                capture_group = re.search(pattern, verses)
-                if capture_group:
-                    verses = re.sub(pattern, capture_group.group(1), verses)
+                bofm_title_remove_contents = [
+                    '<a[^>]*?name="p[1-2]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                    '<div[^>]*?id="media">(.*?)</div>',
+                    '<li[^>]*?class="prev">(.*?)</li>',
+                    '<li[^>]*?class="next">(.*?)</li>',
+                    '<ul[^>]*?>',
+                    '<p>',
+                    '</p>',
+                ]
 
-            for pattern in special_case_remove_tags_and_contents:
-                verses = re.sub(pattern, '', verses)
+                verses = cleanVerse(bofm_title_keep_contents, bofm_title_remove_contents, verses)
+                checkForRemainingTags(verses, path, fileName)
+                writeToCsvSpecialCase(path, fileName, verses)
+                return
 
-            # verses = verses.strip('  ')
-            # verses = verses.strip(' ')
-            print('\n')
-            print('%s/%s' % (path, fileName))
-            print('------------- AFTER CLEANING: -----------------')
-            print(verses)
+            elif fileName == 'bofmintroduction?lang=spa':
+                verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
 
-            all_other_tags = re.findall('<[^>]*?>', verses)
-            for tag in all_other_tags:
-                if tag not in tags_to_keep:
-                    print('%s/%s also contains %s' % (path, fileName, tag))
+                bofm_intro_keep_contents = [
+                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                ]
 
+                bofm_intro_remove_contents = [
+                    '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+                    '</a>',
+                    '<div[^>]*?id="media">(.*?)</div>',
+                    '<li[^>]*?class="prev">(.*?)</li>',
+                    '<li[^>]*?class="next">(.*?)</li>',
+                    '<ul[^>]*?>',
+                    '<p>',
+                    '</p>',
+                ]
 
-            with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
-                writer.writerow({'Verse': 1, 'Text': verses})
+                verses = cleanVerse(bofm_intro_keep_contents, bofm_intro_remove_contents, verses)
+                checkForRemainingTags(verses, path, fileName)
+                writeToCsvSpecialCase(path, fileName, verses)
+                return
 
-            return
+            elif fileName == 'three?lang=spa':
+                verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
+
+                three_keep_contents = [
+                    # '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                ]
+
+                three_remove_contents = [
+                    # '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                    # '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+                    # '</a>',
+                    # '<div[^>]*?id="media">(.*?)</div>',
+                    # '<li[^>]*?class="prev">(.*?)</li>',
+                    # '<li[^>]*?class="next">(.*?)</li>',
+                    # '<ul[^>]*?>',
+                    # '<p>',
+                    # '</p>',
+                ]
+
+                verses = cleanVerse(three_keep_contents, three_remove_contents, verses)
+
+                print(verses)
+
+                checkForRemainingTags(verses, path, fileName)
+                writeToCsvSpecialCase(path, fileName, verses)
+
+                return
+
         # try:
         #     if path.endswith('ps') and fileName == '119?lang=spa':
         #         verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+)</span></div>', data).group(1)
@@ -167,35 +238,41 @@ def getVerses(path, fileName):
         verse_html = [] # To hold raw HTML for verse
         verse_texts = [] # To hold cleaned text for verse
 
-        # Get raw HTML for verses
+        # Get raw HTML for verses using string slicing
         for index in range(len(verse_number_locations)):
             verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
 
         # Clean HTML
         for index, verse in enumerate(verse_html):
 
-            # Clean out tags where we want to keep the contents
-            for pattern in regex_patterns_keep_contents:
-                capture_group = re.search(pattern, verse)
-                if capture_group:
-                    verse = re.sub(pattern, capture_group.group(1), verse)
+            verse = cleanVerse(regex_patterns_keep_contents, regex_patterns_delete_contents, verse)
 
-            # Remove other tags and their contents
-            for pattern in regex_patterns_delete_contents:
-                verse = re.sub(pattern, '', verse)
+            # # Clean out tags where we want to keep the contents
+            # for pattern in regex_patterns_keep_contents:
+            #     capture_group = re.search(pattern, verse)
+            #     if capture_group:
+            #         verse = re.sub(pattern, capture_group.group(1), verse)
+            #
+            # # Remove other tags and their contents
+            # for pattern in regex_patterns_delete_contents:
+            #     verse = re.sub(pattern, '', verse)
 
-            # Check if there are any other html tags not accounted for
-            all_other_tags = re.findall('<[^>]*?>', verse)
-            for tag in all_other_tags:
-                if tag not in tags_to_keep:
-                    print('%s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1))
+            checkForRemainingTags(verse, path, fileName)
+
+            # # Check if there are any other html tags not accounted for
+            # all_other_tags = re.findall('<[^>]*?>', verse)
+            # for tag in all_other_tags:
+            #     if tag not in tags_to_keep:
+            #         print('%s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1))
 
             verse_texts.append(verse)
 
-        with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
-            for index, verse in enumerate(verse_texts):
-                writer.writerow({'Verse': index + 1, 'Text': verse})
+        writeToCsv(path, fileName, verse_texts)
+
+        # with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
+        #     writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
+        #     for index, verse in enumerate(verse_texts):
+        #         writer.writerow({'Verse': index + 1, 'Text': verse})
 
 # ---------------------------------------------------------------------------------------------------------------------- #
 # ----------------------------------------------- COMMAND LINE INTERFACE ----------------------------------------------- #
@@ -256,53 +333,3 @@ elif choice == '3':
         for file in files:
             if file.endswith(language_string):
                 getVerses(subdir, file)
-
-
-# TODO: Empty Garbage
-
-    # capture_group = re.search('<a[^>]*?>(.*?)</a>', verse)
-    # if capture_group:
-    #     verse = re.sub('<a[^>]*?>(.*?)</a>', capture_group.group(1), verse)
-    #
-    # capture_group = re.search('<div[^>]*?class="closing">(.*?)</div>', verse)
-    # if capture_group:
-    #     verse = re.sub('<div[^>]*?class="closing">(.*?)</div>', capture_group.group(1), verse)
-    #
-    # capture_group = re.search('<div[^>]*?class="closingBlock">(.*?)</div>', verse)
-    # if capture_group:
-    #     verse = re.sub('<div[^>]*?class="closingBlock">(.*?)</div>', capture_group.group(1), verse)
-    #
-    # capture_group = re.search('<div[^>]*?class="topic">(.*?)</div>', verse)
-    # if capture_group:
-    #     verse = re.sub('<div[^>]*?class="topic">(.*?)</div>', capture_group.group(1), verse)
-    #
-    # capture_group = re.search('<page-break[^>]*?>(.*?)</page-break>', verse)
-    # if capture_group:
-    #     verse = re.sub('<page-break[^>]*?>(.*?)</page-break>', capture_group.group(1), verse)
-    #
-    # capture_group = re.search('<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">(.*?)</span>', verse)
-    # if capture_group:
-    #     verse = re.sub('<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">(.*?)</span>', capture_group.group(1), verse)
-    #
-    # capture_group = re.search('<span[^>]*?class="language[^>]*?>(.*?)</span>', verse)
-    # if capture_group:
-    #     verse = re.sub('<span[^>]*?class="language[^>]*?>(.*?)</span>', capture_group.group(1), verse)
-    #
-    # capture_group = re.search('<span[^>]*?class="clarityWord">(.*?)</span>', verse)
-    # if capture_group:
-    #     verse = re.sub('<span[^>]*?class="clarityWord">(.*?)</span>', capture_group.group(1), verse)
-    #
-    # capture_group = re.search('<span[^>]*?class="selah">(.*?)</span>', verse)
-    # if capture_group:
-    #     verse = re.sub('<span[^>]*?class="selah">(.*?)</span>', capture_group.group(1), verse)
-    #
-    # capture_group = re.search('<p[^>]*?class=""[^>]*?>(.*?)</p>', verse)
-    # if capture_group:
-    #     verse = re.sub('<p[^>]*?class=""[^>]*?>(.*?)</p>', capture_group.group(1), verse)
-    #
-    # verse = re.sub('<sup[^>]*?class="studyNoteMarker">[a-z]</sup>', '', verse)
-    # verse = re.sub('<span[^>]*?class="verse">[0-9]</span>', '', verse)
-    # verse = re.sub('<div[^>]*?class="summary">(.*?)</div', '', verse)
-    # verse = re.sub('<h2>(.*?)</h2>', '', verse)
-    # verse = re.sub('<p>(.*?)</p>', '', verse)
-    # verse = re.sub('<span[^>]*?class="translit"[^>]*?xml:lang="he">(.*?)</span>','', verse)
