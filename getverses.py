@@ -8,8 +8,16 @@ import csv
 # ----------------------------------------------------  CONSTANTS ------------------------------------------------------ #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
+# These are the table of contents files, and we don't need to convert those.
+toc_files_to_skip = [
+    'bible?lang=spa',
+    'bofm?lang=spa',
+    'dc-testament?lang=spa',
+    'pgp?lang=spa',
+]
+
 # These are all the patterns we want remove without removing their contents.
-regex_patterns_keep_contents = [
+general_patterns_keep_contents = [
     '<a[^>]*?>(.*?)</a>',
     '<div[^>]*?class="closing">(.*?)</div>',
     '<div[^>]*?class="closingBlock">(.*?)</div>',
@@ -26,7 +34,7 @@ regex_patterns_keep_contents = [
 ]
 
 # Patterns to delete where we don't want to keep their contents
-regex_patterns_delete_contents = [
+general_patterns_remove_contents = [
     '<sup[^>]*?class="studyNoteMarker">(.*?)</sup>',
     '<span[^>]*?class="verse">[0-9]</span>',
     '<div[^>]*?class="summary">(.*?)</div',
@@ -37,25 +45,35 @@ regex_patterns_delete_contents = [
 
 # All the tags that should be left over after cleaning
 tags_to_keep = [
-    '<div eid="" words="2" class="signature">',
-    '</div>',
-    '<em>',
-    '</em>',
-    '<span class="allCaps">',
-    '<span class="smallCaps">',
-    '<span class="answer">',
-    '<span class="question">',
-    '<span class="line">',
-    '</span>',
+    # # Signatures for 3 Witnesses
+    # '<div eid="2" words="2" class="signature">', '<div eid="3" words="2" class="signature">', '<div eid="4" words="2" class="signature">',
+    # # Signatures for 8 Witnesses
+    # '<div eid="4" words="3" class="signature">','<div eid="5" words="2" class="signature">','<div eid="5" words="3" class="signature">',
+    # '<div eid="6" words="2" class="signature">','<div eid="7" words="3" class="signature">','<div eid="8" words="2" class="signature">',
+    # '<div eid="9" words="2" class="signature">',
+    # # For OD 1
+    # '<div eid="1" words="3" class="salutation">', '<div eid="7" words="2" class="signature">',
+    # '<div eid="8" words="13" class="office">', '<div eid="7" words="2" class="signature">',
+    # # For OD 2
+    #
+    #
+    # '</div>',
+    # '<em>','</em>',
+    # '<span class="allCaps">',
+    # '<span class="smallCaps">',
+    # '<span class="answer">',
+    # '<span class="question">',
+    # '<span class="line">',
+    # '</span>',
 ]
 
 # The filenames for each file that has to be processed individually.
 special_case_filenames = [
     'bofm-title?lang=spa',
     'eight?lang=spa',
+    'bofmintroduction?lang=spa',
     # 'introduction?lang=spa',
     #TODO: Uncomment above and delete line below this.
-    'bofmintroduction?lang=spa',
     'three?lang=spa',
     'dcintroduction?lang=spa',
     'od1?lang=spa',
@@ -64,6 +82,22 @@ special_case_filenames = [
     'fac-1?lang=spa',
     'fac-2?lang=spa',
     'fac-3?lang=spa',
+]
+
+# The special-case tags for the 2 witnesses sections (they're the same)
+witnesses_keep_contents = [
+    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+    '<div[^>]*?class="closingBlock">(.*?)</div>',
+]
+
+witnesses_remove_contents = [
+    '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+    '<div[^>]*?id="media">(.*?)</div>',
+    '<li[^>]*?class="prev">(.*?)</li>',
+    '<li[^>]*?class="next">(.*?)</li>',
+    '<ul[^>]*?>',
+    '<p>',
+    '</p>',
 ]
 
 # ---------------------------------------------------------------------------------------------------------------------- #
@@ -79,14 +113,22 @@ def cleanVerse(patterns_keep_contents, patterns_delete_contents, string_to_clean
     for pattern in patterns_delete_contents:
         string_to_clean = re.sub(pattern, '', string_to_clean)
 
+    string_to_clean = re.sub('^\s\s+', '', string_to_clean) # Remove all leading whitespace
+
     return string_to_clean
 
 
-def checkForRemainingTags(verse_to_check, path, fileName):
+def checkForRemainingTagsForSpecialCase(verse_to_check, path, fileName):
     all_other_tags = re.findall('<[^>]*?>', verse_to_check)
     for tag in all_other_tags:
         if tag not in tags_to_keep:
             print('%s/%s also contains %s' % (path, fileName, tag))
+
+def checkFormRemainingTags(verse_to_check, index, path, fileName):
+    all_other_tags = re.findall('<[^>]*?>', verse)
+    for tag in all_other_tags:
+        if tag not in tags_to_keep:
+            print('%s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1))
 
 
 def writeToCsv(path, fileName, verse_texts):
@@ -103,19 +145,12 @@ def writeToCsvSpecialCase(path, fileName, verses):
 
 special_case_remove_tags_keep_contents = [
     # '<div[^>]*?class="studyIntro">(.*?)</div>',
-    # # '<div[^>]*?class="openingBlock">(.*?)</div>',
     # '<span[^>]*?class="language[^>]*?>(.*?)</span>',
     # # '<div[^>]*?class="topic">(.*?)</div>',
     # # '<div[^>]*?class="addressee">(.*?)</div>',
-    # '<div[^>]*?class="preamble">(.*?)</div>',
     # '<div[^>]*?class="figure">(.*?)</div>',
     # # '<li[^>]*?>(.*?)</li>',
 
-]
-
-special_case_remove_tags_and_contents = [
-    # '<ul[^>]*?>(.*?)</ul>',
-    # '<a[^>]*?>',
 ]
 
 
@@ -123,7 +158,9 @@ def getVerses(path, fileName):
     with open('%s/%s' % (path, fileName), 'r') as html:
         data = html.read().replace('\n', ' ')
 
-        if fileName in special_case_filenames:
+        if fileName in toc_files_to_skip:
+            return
+        elif fileName in special_case_filenames:
             # if path.endswith('bofm') and fileName == 'bofm-title?lang=spa':
             if fileName == 'bofm-title?lang=spa':
                 verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
@@ -137,7 +174,7 @@ def getVerses(path, fileName):
                 ]
 
                 bofm_title_remove_contents = [
-                    '<a[^>]*?name="p[1-2]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                    '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
                     '<div[^>]*?id="media">(.*?)</div>',
                     '<li[^>]*?class="prev">(.*?)</li>',
                     '<li[^>]*?class="next">(.*?)</li>',
@@ -147,7 +184,7 @@ def getVerses(path, fileName):
                 ]
 
                 verses = cleanVerse(bofm_title_keep_contents, bofm_title_remove_contents, verses)
-                checkForRemainingTags(verses, path, fileName)
+                checkForRemainingTagsForSpecialCase(verses, path, fileName)
                 writeToCsvSpecialCase(path, fileName, verses)
                 return
 
@@ -171,103 +208,166 @@ def getVerses(path, fileName):
                 ]
 
                 verses = cleanVerse(bofm_intro_keep_contents, bofm_intro_remove_contents, verses)
-                checkForRemainingTags(verses, path, fileName)
+                checkForRemainingTagsForSpecialCase(verses, path, fileName)
                 writeToCsvSpecialCase(path, fileName, verses)
                 return
 
             elif fileName == 'three?lang=spa':
                 verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
-
-                three_keep_contents = [
-                    # '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-                ]
-
-                three_remove_contents = [
-                    # '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
-                    # '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-                    # '</a>',
-                    # '<div[^>]*?id="media">(.*?)</div>',
-                    # '<li[^>]*?class="prev">(.*?)</li>',
-                    # '<li[^>]*?class="next">(.*?)</li>',
-                    # '<ul[^>]*?>',
-                    # '<p>',
-                    # '</p>',
-                ]
-
-                verses = cleanVerse(three_keep_contents, three_remove_contents, verses)
-
-                print(verses)
-
-                checkForRemainingTags(verses, path, fileName)
+                verses = cleanVerse(witnesses_keep_contents, witnesses_remove_contents, verses)
+                checkForRemainingTagsForSpecialCase(verses, path, fileName)
                 writeToCsvSpecialCase(path, fileName, verses)
-
                 return
 
-        # try:
-        #     if path.endswith('ps') and fileName == '119?lang=spa':
-        #         verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+)</span></div>', data).group(1)
-        #     elif fileName in special_case_filenames:
-        #         print('in here')
-        #         verses = re.search('<div[^>]*?id="primary">(.+)</ul></div>', data).group(1)
-        #         print(verses)
-        #     else:
-        #         verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
-        # except AttributeError:
-        #     #TODO: Process in special way for files with no verses (facsimilies, etc.)
-        #     # BOFM title pages <div id="primary">
-        #     print("Verses not found in %s/%s. Handling as special case." % (path, fileName))
-        #     verses = 'ERROR: Verses not found in this file'
+            elif fileName == 'eight?lang=spa':
+                verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
+                verses = cleanVerse(witnesses_keep_contents, witnesses_remove_contents, verses)
+                checkForRemainingTagsForSpecialCase(verses, path, fileName)
+                writeToCsvSpecialCase(path, fileName, verses)
+                return
+
+            elif fileName == 'dcintroduction?lang=spa':
+                # TODO: Check and make sure this one is actually working.  Check text against itself.
+                verses = re.search('<div\s+id="primary">(.*?)</p>[^<]*?</div>', data).group(1)
+
+                dc_intro_keep_contents = [
+                    '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
+                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                    '<div[^>]*?id="media">(.*?)</div>',
+                    '<div[^>]*?class="preamble">(.*?)</div>',
+                    '<h2>(.*?)</h2>',
+
+                ]
+
+                dc_intro_remove_contents = [
+                    '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">',
+                    '<div[^>]*?class="topic">',
+                    '</a>',
+                    '<p>','</p>',
+                    '<li>','</li>',
+                    '<ul[^>]*?>',
+                ]
+
+                verses = cleanVerse(dc_intro_keep_contents, dc_intro_remove_contents, verses)
+                checkForRemainingTagsForSpecialCase(verses, path, fileName)
+                writeToCsvSpecialCase(path, fileName, verses)
+                return
+
+            elif fileName == "od1?lang=spa":
+                verses = re.search('<div\s+id="primary">(.*?)</p>[^<]*?</div>', data).group(1)
+
+                od_1_keep_contents = [
+                    '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
+                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                    '<div[^>]*?class="openingBlock">(.*?)</div>',
+                    '<div[^>]*?class="closingBlock">(.*?)</div>',
+                    '<div[^>]*?class="studyIntro">(.*?)</div>',
+                    '<h2>(.*?)</h2>',
+                ]
+
+                od_1_remove_contents = [
+                    '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+                    '</a>',
+                    '<div[^>]*?class="topic">',
+                    '<div[^>]*?id="media">(.*?)</div>',
+                    '<p>','</p>',
+                ]
+
+                verses = cleanVerse(od_1_keep_contents, od_1_remove_contents, verses)
+                checkForRemainingTagsForSpecialCase(verses, path, fileName)
+                writeToCsvSpecialCase(path, fileName, verses)
+                return
+
+            elif fileName == "od2?lang=spa":
+                verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
+
+                od_2_keep_contents = [
+                    # '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
+                    # '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                    # '<div[^>]*?class="openingBlock">(.*?)</div>',
+                    # '<div[^>]*?class="closingBlock">(.*?)</div>',
+                    '<h2>(.*?)</h2>',
+                    '<div[^>]*?class="studyIntro">(.*?)</div>',
+                    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+                ]
+
+                od_2_remove_contents = [
+                    '<div[^>]*?id="media">(.*?)</div>',
+                    '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+                    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+                    '</a>',
+                    # '<div[^>]*?class="topic">',
+                    '<p>','</p>',
+
+                ]
+
+                verses = cleanVerse(od_2_keep_contents, od_2_remove_contents, verses)
+                print(verses)
+                checkForRemainingTagsForSpecialCase(verses, path, fileName)
+                writeToCsvSpecialCase(path, fileName, verses)
+                return
+
+            elif fileName == "fac1?lang=spa":
+                return
+
+            elif fileName == "fac2?lang=spa":
+                return
+
+            elif fileName == "fac3?lang=spa":
+                return
+
+            # elif path.endswith('ps') and fileName == "119?lang=spa":
+            elif fileName == "119?lang=spa":
+                return
+
+        else:
+            try:
+                verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
+            except AttributeError:
+                print('Verses not found in %s/%s. Please Handle Manually' % (path, fileName))
+                return
+
+            # Get sub-string index for each verse number
+            verse_number_locations = []
+            for index in re.finditer('<span class="verse">', verses):
+                verse_number_locations.append(index.end() + 1)
+
+            # Get index for the beginning of each verse
+            verse_text_end_locations = []
+            for index in re.finditer('</p>', verses):
+                verse_text_end_locations.append(index.start())
+
+            # Get index for the end of each verse
+            verse_text_start_locations = []
+            for index in range(len(verse_number_locations)):
+                location = verses.find('</span>', verse_number_locations[index])
+                verse_text_start_locations.append(location + len('</span>'))
+
+            verse_html = [] # To hold raw HTML for verse
+            verse_texts = [] # To hold cleaned text for verse
+
+            # Get raw HTML for verses using string slicing
+            for index in range(len(verse_number_locations)):
+                verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
+
+            # Clean HTML
+            for index, verse in enumerate(verse_html):
+                verse = cleanVerse(general_patterns_keep_contents, general_patterns_remove_contents, verse)
+                checkFormRemainingTags(verse, index, path, fileName)
+
+                # # Check if there are any other html tags not accounted for
+                # all_other_tags = re.findall('<[^>]*?>', verse)
+                # for tag in all_other_tags:
+                #     if tag not in tags_to_keep:
+                #         print('%s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1))
 
 
-        # Get sub-string index for each verse number
-        verse_number_locations = []
-        for index in re.finditer('<span class="verse">', verses):
-            verse_number_locations.append(index.end() + 1)
+                verse_texts.append(verse)
 
-        # Get index for the beginning of each verse
-        verse_text_end_locations = []
-        for index in re.finditer('</p>', verses):
-            verse_text_end_locations.append(index.start())
-
-        # Get index for the end of each verse
-        verse_text_start_locations = []
-        for index in range(len(verse_number_locations)):
-            location = verses.find('</span>', verse_number_locations[index])
-            verse_text_start_locations.append(location + len('</span>'))
-
-        verse_html = [] # To hold raw HTML for verse
-        verse_texts = [] # To hold cleaned text for verse
-
-        # Get raw HTML for verses using string slicing
-        for index in range(len(verse_number_locations)):
-            verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
-
-        # Clean HTML
-        for index, verse in enumerate(verse_html):
-
-            verse = cleanVerse(regex_patterns_keep_contents, regex_patterns_delete_contents, verse)
-
-            # # Clean out tags where we want to keep the contents
-            # for pattern in regex_patterns_keep_contents:
-            #     capture_group = re.search(pattern, verse)
-            #     if capture_group:
-            #         verse = re.sub(pattern, capture_group.group(1), verse)
-            #
-            # # Remove other tags and their contents
-            # for pattern in regex_patterns_delete_contents:
-            #     verse = re.sub(pattern, '', verse)
-
-            checkForRemainingTags(verse, path, fileName)
-
-            # # Check if there are any other html tags not accounted for
-            # all_other_tags = re.findall('<[^>]*?>', verse)
-            # for tag in all_other_tags:
-            #     if tag not in tags_to_keep:
-            #         print('%s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1))
-
-            verse_texts.append(verse)
-
-        writeToCsv(path, fileName, verse_texts)
+            writeToCsv(path, fileName, verse_texts)
 
         # with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
         #     writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
