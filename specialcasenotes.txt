@@ -1,4 +1,0 @@
-All 4 Book of Mormon ones have <div id="primary">
-In the english version of the database, all 4 bofm ones are one "verse".  So no need to separate them into verses.
-Gotta be super careful with non-greedyness
-Gotta figure out a way to eliminate the leading whitespace.

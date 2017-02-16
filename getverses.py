@@ -110,7 +110,7 @@ def checkForRemainingTagsForSpecialCase(verse_to_check, path, fileName):
             print('%s/%s also contains %s' % (path, fileName, tag))
 
 
-def checkFormRemainingTags(verse_to_check, index, path, fileName):
+def checkForRemainingTags(verse_to_check, index, path, fileName):
     all_other_tags = re.findall('<[^>]*?>', verse_to_check)
     for tag in all_other_tags:
         if tag not in tags_to_keep:
@@ -373,10 +373,62 @@ def getVerses(path, fileName):
             return
 
         elif path.endswith('ps') and fileName == "119?lang=spa":
-            verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.*?)</span>[^<]*?</p>[^<]*?</div>[^<]*?</div>', data).group(1)
-            # TODO: Still need to fix Psalm 119
-            print('PSALM 119 NOT YET WORKING')
-            raise
+            verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.*?)</div>[^<]*?</div>', data).group(1)
+
+            ps_119_pre_clean = [
+                '<h2>(.*?)</h2>',
+                '<div[^>]*?class="summary">(.*?)</div>',
+                '<div[^>]*?class="topic">',
+                '</div>',
+                '<sup[^>]*?class="studyNoteMarker">(.*?)</sup>',
+                '<a[^>]*?class="bookmark-anchor[^>]*?dontHighlight"[^>]*?name="[0-9]*?">(.*?)</a>',
+                '<a[^>]*?class="footnote"[^>]*?href="[^>]*?"[^>]*?rel="[^>]*?">',
+                '</a>',
+                '<p[^>]*?class=""[^>]*?uri="[^>]*?">',
+            ]
+
+            for pattern in ps_119_pre_clean:
+                verses = re.sub(pattern, '', verses)
+
+            verse_number_locations = []
+            for index in re.finditer('<span class="verse">', verses):
+                verse_number_locations.append(index.end() + 1)
+
+            verse_text_end_locations = []
+            for index in re.finditer('</p>', verses):
+                verse_text_end_locations.append(index.start())
+
+            verse_text_start_locations = []
+            for index in range(len(verse_number_locations)):
+                location = verses.find('<span class="verse">', verse_number_locations[index])
+                verse_text_start_locations.append(location + len('<span class="verse">'))
+
+            print(verse_text_start_locations)
+            print(verse_text_end_locations)
+
+            verse_html = []
+            verse_texts = []
+
+            for index in range(len(verse_number_locations)):
+                verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
+
+            ps_119_keep_contents = [
+                '<span[^>]*?class="clarityWord">(.*?)</span>',
+            ]
+
+            ps_119_remove_contents = [
+                '</p>',
+                '<span[^>]*?class="verse">[0-9]+[^<]*?</span>',
+            ]
+
+            for index, verse in enumerate(verse_html):
+                verse = cleanVerse(ps_119_keep_contents, ps_119_remove_contents, verse)
+                checkForRemainingTags(verse, index, path, fileName)
+                verse_texts.append(verse)
+
+            writeToCsv(path, fileName, verse_texts)
+
+            return
 
         # Handle All Other Files Besides Special Cases
         else:
@@ -411,7 +463,7 @@ def getVerses(path, fileName):
 
         for index, verse in enumerate(verse_html):
             verse = cleanVerse(general_patterns_keep_contents, general_patterns_remove_contents, verse)
-            checkFormRemainingTags(verse, index, path, fileName)
+            checkForRemainingTags(verse, index, path, fileName)
             verse_texts.append(verse)
 
         writeToCsv(path, fileName, verse_texts)
@@ -472,8 +524,9 @@ elif choice == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for file in files:
             if file.endswith(language_string):
-                try:
-                    getVerses(subdir, file)
-                    print('%s/%s DONE' % (subdir, file))
-                except:
-                    print('Unable to convert: %s/%s' % (subdir, file))
+                # try:
+                getVerses(subdir, file)
+                    # TODO: DO you want confirmation a chapter worked or not?
+                    # print('%s/%s DONE' % (subdir, file))
+                # except:
+                    # print('Unable to convert: %s/%s' % (subdir, file))
