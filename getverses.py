@@ -131,6 +131,15 @@ def writeToCsvSpecialCase(path, fileName, verses):
 
 
 def getVerses(path, fileName):
+
+    ### Properties ###
+
+    verse_number_locations = [] # Holds the index of the verse numbers
+    verse_text_start_locations = [] #Holds the substring index where verses start
+    verse_text_end_locations = [] # Holds the substring index where verses end
+    verse_html = [] # Holds raw Html for split verses
+    verse_texts = [] # Holds finished cleaned text for verses
+
     with open('%s/%s' % (path, fileName), 'r') as html:
         data = html.read().replace('\n', ' ')
 
@@ -390,24 +399,14 @@ def getVerses(path, fileName):
             for pattern in ps_119_pre_clean:
                 verses = re.sub(pattern, '', verses)
 
-            verse_number_locations = []
             for index in re.finditer('<span class="verse">', verses):
                 verse_number_locations.append(index.end() + 1)
 
-            verse_text_end_locations = []
             for index in re.finditer('</p>', verses):
-                verse_text_end_locations.append(index.start())
+                verse_text_end_locations.append(index.end())
 
-            verse_text_start_locations = []
-            for index in range(len(verse_number_locations)):
-                location = verses.find('<span class="verse">', verse_number_locations[index])
-                verse_text_start_locations.append(location + len('<span class="verse">'))
-
-            print(verse_text_start_locations)
-            print(verse_text_end_locations)
-
-            verse_html = []
-            verse_texts = []
+            for index in re.finditer('<span class="verse">', verses):
+                verse_text_start_locations.append(index.start())
 
             for index in range(len(verse_number_locations)):
                 verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
@@ -439,23 +438,17 @@ def getVerses(path, fileName):
                 return
 
         # Get sub-string index for each verse number
-        verse_number_locations = []
         for index in re.finditer('<span class="verse">', verses):
             verse_number_locations.append(index.end() + 1)
 
         # Get index for the beginning of each verse
-        verse_text_end_locations = []
         for index in re.finditer('</p>', verses):
             verse_text_end_locations.append(index.start())
 
         # Get index for the end of each verse
-        verse_text_start_locations = []
         for index in range(len(verse_number_locations)):
             location = verses.find('</span>', verse_number_locations[index])
             verse_text_start_locations.append(location + len('</span>'))
-
-        verse_html = [] # To hold raw HTML for verse
-        verse_texts = [] # To hold cleaned text for verse
 
         # Get raw HTML for verses using string slicing
         for index in range(len(verse_number_locations)):
@@ -524,9 +517,9 @@ elif choice == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for file in files:
             if file.endswith(language_string):
-                # try:
-                getVerses(subdir, file)
+                try:
+                    getVerses(subdir, file)
                     # TODO: DO you want confirmation a chapter worked or not?
-                    # print('%s/%s DONE' % (subdir, file))
-                # except:
-                    # print('Unable to convert: %s/%s' % (subdir, file))
+                    print('%s/%s DONE' % (subdir, file))
+                except:
+                    print('Unable to convert: %s/%s' % (subdir, file))
