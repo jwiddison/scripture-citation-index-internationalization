@@ -8,7 +8,7 @@ import csv
 # ----------------------------------------------------  CONSTANTS ------------------------------------------------------ #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
-# These are the table of contents files, and we don't need to convert those.
+# These are the filenames for table of contents files, and we don't need to convert those.
 toc_files_to_skip = [
     'bible?lang=spa',
     'bofm?lang=spa',
@@ -18,7 +18,6 @@ toc_files_to_skip = [
 
 # These are all the patterns we want remove without removing their contents.
 general_patterns_keep_contents = [
-    '<a[^>]*?>(.*?)</a>',
     '<div[^>]*?class="closing">(.*?)</div>',
     '<div[^>]*?class="closingBlock">(.*?)</div>',
     '<div[^>]*?class="topic">(.*?)</div>',
@@ -41,6 +40,8 @@ general_patterns_remove_contents = [
     '<h2>(.*?)</h2>',
     '<p>(.*?)</p>',
     '<span[^>]*?class="translit"[^>]*?xml:lang="he">(.*?)</span>',
+    '<a[^>]*?>',
+    '</a>',
 ]
 
 # All the tags that should be left over after cleaning
@@ -103,8 +104,8 @@ def cleanVerse(patterns_keep_contents, patterns_delete_contents, string_to_clean
     return string_to_clean
 
 
-def checkForRemainingTagsForSpecialCase(verse_to_check, path, fileName):
-    all_other_tags = re.findall('<[^>]*?>', verse_to_check)
+def checkForRemainingTagsForSpecialCase(verses_block, path, fileName):
+    all_other_tags = re.findall('<[^>]*?>', verses_block)
     for tag in all_other_tags:
         if tag not in tags_to_keep:
             print('%s/%s also contains %s' % (path, fileName, tag))
@@ -437,36 +438,36 @@ def getVerses(path, fileName):
                 print('Verses not found in %s/%s. Please Handle Manually' % (path, fileName))
                 return
 
-        # Get sub-string index for each verse number
-        for index in re.finditer('<span class="verse">', verses):
-            verse_number_locations.append(index.end() + 1)
+            # Get sub-string index for each verse number
+            for index in re.finditer('<span class="verse">', verses):
+                verse_number_locations.append(index.end() + 1)
 
-        # Get index for the beginning of each verse
-        for index in re.finditer('</p>', verses):
-            verse_text_end_locations.append(index.start())
+            # Get index for the beginning of each verse
+            for index in re.finditer('</p>', verses):
+                verse_text_end_locations.append(index.start())
 
-        # Get index for the end of each verse
-        for index in range(len(verse_number_locations)):
-            location = verses.find('</span>', verse_number_locations[index])
-            verse_text_start_locations.append(location + len('</span>'))
+            # Get index for the end of each verse
+            for index in range(len(verse_number_locations)):
+                location = verses.find('</span>', verse_number_locations[index])
+                verse_text_start_locations.append(location + len('</span>'))
 
-        # Get raw HTML for verses using string slicing
-        for index in range(len(verse_number_locations)):
-            verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
+            # Get raw HTML for verses using string slicing
+            for index in range(len(verse_number_locations)):
+                verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
 
-        for index, verse in enumerate(verse_html):
-            verse = cleanVerse(general_patterns_keep_contents, general_patterns_remove_contents, verse)
-            checkForRemainingTags(verse, index, path, fileName)
-            verse_texts.append(verse)
+            # Clean verse, check for other tags, and write cleaned text into verse_texts list
+            for index, verse in enumerate(verse_html):
+                verse = cleanVerse(general_patterns_keep_contents, general_patterns_remove_contents, verse)
+                checkForRemainingTags(verse, index, path, fileName)
+                verse_texts.append(verse)
 
-        writeToCsv(path, fileName, verse_texts)
+            writeToCsv(path, fileName, verse_texts)
 
 
 # ---------------------------------------------------------------------------------------------------------------------- #
 # ----------------------------------------------- COMMAND LINE INTERFACE ----------------------------------------------- #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
-# print('\nCurrently using \'spa\' for language code.  Change in script if desired.')
 language_string = '?lang=spa'
 
 path_to_dir = input("\nPlease input the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
