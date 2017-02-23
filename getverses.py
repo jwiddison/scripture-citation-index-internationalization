@@ -449,8 +449,8 @@ def getVerses(path, fileName):
             for pattern in ps_119_pre_clean:
                 verses = re.sub(pattern, '', verses)
 
-            # # Fix all multiple <span class="line"> instances
-            # verses = re.sub('</span><span[^>]*?class="line">', ' ', verses)
+            # Fix all multiple <span class="line"> instances
+            verses = re.sub('</span><span[^>]*?class="line">', '</span> <span class="line">', verses)
 
             # print('>>>>>>>>>>>>>>>>>>>>>>>>>>' + verses)
 
