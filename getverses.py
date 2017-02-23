@@ -60,6 +60,7 @@ tags_to_keep = [
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">',
     # Other
+    '<div class="closingBlock">',
     '<em>',
     '</em>',
     '<span class="allCaps">',
@@ -72,7 +73,7 @@ tags_to_keep = [
 # These are all the patterns we want remove without removing their contents.
 general_patterns_keep_contents = [
     '<div[^>]*?class="closing">(.*?)</div>',
-    '<div[^>]*?class="closingBlock">(.*?)</div>',
+    # '<div[^>]*?class="closingBlock">(.*?)</div>',
     '<div[^>]*?class="topic">(.*?)</div>',
     '<page-break[^>]*?>(.*?)</page-break>',
     '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">(.*?)</span>',
@@ -103,7 +104,7 @@ bofm_title_keep_contents = [
     '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
     '<div[^>]*?class="subtitle">(.*?)</div>',
     '<span[^>]*?class="dominant">(.*?)</span>',
-    '<div[^>]*?class="closingBlock">(.*?)</div>',
+    # '<div[^>]*?class="closingBlock">(.*?)</div>',
     '<div[^>]*?class="closing">(.*?)</div>',
 ]
 
@@ -137,7 +138,7 @@ bofm_intro_remove_contents = [
 # The special-case tags for the 2 witnesses sections (they're the same)
 witnesses_keep_contents = [
     '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-    '<div[^>]*?class="closingBlock">(.*?)</div>',
+    # '<div[^>]*?class="closingBlock">(.*?)</div>',
 ]
 
 witnesses_remove_contents = [
@@ -178,7 +179,7 @@ od_1_keep_contents = [
     '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
     '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
     '<div[^>]*?class="openingBlock">(.*?)</div>',
-    '<div[^>]*?class="closingBlock">(.*?)</div>',
+    # '<div[^>]*?class="closingBlock">(.*?)</div>',
     '<div[^>]*?class="studyIntro">(.*?)</div>',
     '<h2>(.*?)</h2>',
 ]
@@ -200,7 +201,7 @@ od_2_keep_contents = [
     '<div[^>]*?class="addressee">(.*?)</div>',
     '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
     '<div[^>]*?class="closing">(.*?)</div>',
-    '<div[^>]*?class="closingBlock">(.*?)</div>',
+    # '<div[^>]*?class="closingBlock">(.*?)</div>',
     '<div[^>]*?class="openingBlock">(.*?)</div>',
 
 ]
@@ -449,10 +450,8 @@ def getVerses(path, fileName):
             for pattern in ps_119_pre_clean:
                 verses = re.sub(pattern, '', verses)
 
-            # Fix all multiple <span class="line"> instances
+            # Fix all multiple <span class="line"> instances by adding a space between them.
             verses = re.sub('</span><span[^>]*?class="line">', '</span> <span class="line">', verses)
-
-            # print('>>>>>>>>>>>>>>>>>>>>>>>>>>' + verses)
 
             for index in re.finditer('<span class="verse">', verses):
                 verse_number_locations.append(index.end() + 1)
