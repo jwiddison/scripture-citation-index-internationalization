@@ -1,19 +1,25 @@
+#!/Library/Frameworks/Python.framework/Versions/3.5/bin/python3
+
 # !/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 
 import re
 import os
 import csv
+import sys
 
 # ---------------------------------------------------------------------------------------------------------------------- #
 # ----------------------------------------------------  CONSTANTS ------------------------------------------------------ #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
+language_code = '?lang=spa'
+
+
 # These are the filenames for table of contents files, and we don't need to convert those.
 toc_files_to_skip = [
-    'bible?lang=spa',
-    'bofm?lang=spa',
-    'dc-testament?lang=spa',
-    'pgp?lang=spa',
+    'bible%s' % language_code,
+    'bofm%s' % language_code,
+    'dc-testament%s' % language_code,
+    'pgp%s' % language_code,
 ]
 
 # These are all the patterns we want remove without removing their contents.
@@ -47,30 +53,79 @@ general_patterns_remove_contents = [
 # All the tags that should be left over after cleaning
 tags_to_keep = [
     # Signatures for 3 Witnesses
-    '<div eid="2" words="2" class="signature">', '<div eid="3" words="2" class="signature">', '<div eid="4" words="2" class="signature">',
+    '<div eid="2" words="2" class="signature">',
+    '<div eid="3" words="2" class="signature">',
+    '<div eid="4" words="2" class="signature">',
     # Signatures for 8 Witnesses
-    '<div eid="4" words="3" class="signature">','<div eid="5" words="2" class="signature">','<div eid="5" words="3" class="signature">',
-    '<div eid="6" words="2" class="signature">','<div eid="7" words="3" class="signature">','<div eid="8" words="2" class="signature">',
+    '<div eid="4" words="3" class="signature">',
+    '<div eid="5" words="2" class="signature">',
+    '<div eid="5" words="3" class="signature">',
+    '<div eid="6" words="2" class="signature">',
+    '<div eid="7" words="3" class="signature">',
+    '<div eid="8" words="2" class="signature">',
     '<div eid="9" words="2" class="signature">',
     # For OD 1
-    '<div eid="1" words="3" class="salutation">', '<div eid="7" words="2" class="signature">',
-    '<div eid="8" words="13" class="office">', '<div eid="7" words="2" class="signature">',
+    '<div eid="1" words="3" class="salutation">',
+    '<div eid="7" words="2" class="signature">',
+    '<div eid="8" words="13" class="office">',
+    '<div eid="7" words="2" class="signature">',
     # For OD 2
-    '<div eid="7" words="2" class="salutation">','<div eid="13" words="2" class="signature">','<div eid="14" words="3" class="signature">',
-    '<div eid="15" words="2" class="signature">','<div eid="16" words="3" class="office">','<div eid="13" words="2" class="signature">',
+    '<div eid="7" words="2" class="salutation">',
+    '<div eid="13" words="2" class="signature">',
+    '<div eid="14" words="3" class="signature">',
+    '<div eid="15" words="2" class="signature">',
+    '<div eid="16" words="3" class="office">',
+    '<div eid="13" words="2" class="signature">',
     '</div>',
     # For Facsimilies
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">',
     # Other
-    '<em>','</em>',
+    '<em>',
+    '</em>',
     '<span class="allCaps">',
     '<span class="smallCaps">',
     '<span class="answer">',
     '<span class="question">',
     '<span class="line">',
     '</span>',
+]
+
+# The special-case tags for the BofM Title Page
+bofm_title_keep_contents = [
+    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+    '<div[^>]*?class="subtitle">(.*?)</div>',
+    '<span[^>]*?class="dominant">(.*?)</span>',
+    '<div[^>]*?class="closingBlock">(.*?)</div>',
+    '<div[^>]*?class="closing">(.*?)</div>',
+]
+
+bofm_title_remove_contents = [
+    '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+    '<div[^>]*?id="media">(.*?)</div>',
+    '<li[^>]*?class="prev">(.*?)</li>',
+    '<li[^>]*?class="next">(.*?)</li>',
+    '<ul[^>]*?>',
+    '<p>',
+    '</p>',
+]
+
+# The special-case tags for the BofM introduction
+bofm_intro_keep_contents = [
+    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+]
+
+bofm_intro_remove_contents = [
+    '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+    '</a>',
+    '<div[^>]*?id="media">(.*?)</div>',
+    '<li[^>]*?class="prev">(.*?)</li>',
+    '<li[^>]*?class="next">(.*?)</li>',
+    '<ul[^>]*?>',
+    '<p>',
+    '</p>',
 ]
 
 # The special-case tags for the 2 witnesses sections (they're the same)
@@ -89,6 +144,147 @@ witnesses_remove_contents = [
     '</p>',
 ]
 
+# The special-case tags for the D&C Introduction
+dc_intro_keep_contents = [
+    '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
+    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+    '<div[^>]*?id="media">(.*?)</div>',
+    '<div[^>]*?class="preamble">(.*?)</div>',
+    '<h2>(.*?)</h2>',
+
+]
+
+dc_intro_remove_contents = [
+    '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+    '<div[^>]*?class="article"[^>]*?id="[^>]*?">',
+    '<div[^>]*?class="topic">',
+    '</a>',
+    '<p>',
+    '</p>',
+    '<li>',
+    '</li>',
+    '<ul[^>]*?>',
+]
+
+# The special-case tags for Official Declaration 1
+od_1_keep_contents = [
+    '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
+    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+    '<div[^>]*?class="openingBlock">(.*?)</div>',
+    '<div[^>]*?class="closingBlock">(.*?)</div>',
+    '<div[^>]*?class="studyIntro">(.*?)</div>',
+    '<h2>(.*?)</h2>',
+]
+
+od_1_remove_contents = [
+    '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+    '</a>',
+    '<div[^>]*?class="topic">',
+    '<div[^>]*?id="media">(.*?)</div>',
+    '<p>',
+    '</p>',
+]
+
+# The special-case tags for Official Declaration 2
+od_2_keep_contents = [
+    '<h2>(.*?)</h2>',
+    '<div[^>]*?class="studyIntro">(.*?)</div>',
+    '<div[^>]*?class="addressee">(.*?)</div>',
+    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+    '<div[^>]*?class="closing">(.*?)</div>',
+    '<div[^>]*?class="closingBlock">(.*?)</div>',
+    '<div[^>]*?class="openingBlock">(.*?)</div>',
+
+]
+
+od_2_remove_contents = [
+    '<div[^>]*?id="media">(.*?)</div>',
+    '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
+    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+    '</a>',
+    '<p>',
+    '</p>',
+    '<li[^>]*?class="prev">(.*?)</li>',
+    '<li[^>]*?class="next">(.*?)</li>',
+    '<ul[^>]*?>',
+]
+
+# The special-case tags for Facsimile No 1
+fac_1_keep_contents = [
+    '<table\s+class="definition">(.*?)</table>',
+]
+
+fac_1_remove_contents = [
+    '<page-break[^>]*?page="32"></page-break>',
+    '<div[^>]*?class="verses\s+maps">',
+    '<p>',
+    '</p>',
+    '<div[^>]*?class="figure">',
+    '<td>',
+    '</td>',
+    '<tr>',
+    '</tr>',
+    '<h2>',
+    '</h2>',
+]
+
+# The special-case tags for Facsimile No 2
+fac_2_keep_contents = [
+    '<table\s+class="definition">(.*?)</table>',
+    '<div[^>]*?class="figure">(.*?)</div>',
+]
+
+fac_2_remove_contents = [
+    '<page-break[^>]*?page="40"></page-break>',
+    '<div[^>]*?class="verses\s+maps">',
+    '<wbr></wbr>',
+    '<p\s+uri="[^>]*?"\s+class="">',
+    '<p>',
+    '</p>',
+    '<td>',
+    '</td>',
+    '<tr>',
+    '</tr>',
+    '<h2>',
+    '</h2>',
+    '<li[^>]*?class="prev">(.*?)</li>',
+    '<li[^>]*?class="next">(.*?)</li>',
+    '<ul[^>]*?>',
+    '</div>',
+]
+
+# The special-case tags for Facsimile No 3
+fac_3_keep_contents = [
+    '<table\s+class="definition">(.*?)</table>',
+    '<div[^>]*?class="figure">(.*?)</div>',
+]
+
+fac_3_remove_contents = [
+    '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
+    '</a>',
+    '<page-break[^>]*?page="47"></page-break>',
+    '<div[^>]*?class="verses\s+maps">',
+    '<p\s+uri="[^>]*?"\s+class="">',
+    '<p>',
+    '</p>',
+    '<td>',
+    '</td>',
+    '<tr>',
+    '</tr>',
+    '<h2>',
+    '</h2>',
+    '<li[^>]*?class="prev">(.*?)</li>',
+    '<li[^>]*?class="next">(.*?)</li>',
+    '<ul[^>]*?>',
+    '</div>',
+]
+
+# The special-case tags for Psalm 119
+
+
+
 # ---------------------------------------------------------------------------------------------------------------------- #
 # -----------------------------------------------------  HELPERS  ------------------------------------------------------ #
 # ---------------------------------------------------------------------------------------------------------------------- #
@@ -96,31 +292,39 @@ witnesses_remove_contents = [
 def cleanVerse(patterns_keep_contents, patterns_delete_contents, string_to_clean):
     for pattern in patterns_keep_contents:
         capture_group = re.search(pattern, string_to_clean)
+
         if capture_group:
             string_to_clean = re.sub(pattern, capture_group.group(1), string_to_clean)
+
     for pattern in patterns_delete_contents:
         string_to_clean = re.sub(pattern, '', string_to_clean)
+
     string_to_clean = re.sub('^\s\s+', '', string_to_clean) # Remove all leading whitespace
+    #TODO: Add trim off trailing, replace 2 or more with 1 space
+
     return string_to_clean
 
 
 def checkForRemainingTagsForSpecialCase(verses_block, path, fileName):
     all_other_tags = re.findall('<[^>]*?>', verses_block)
+
     for tag in all_other_tags:
         if tag not in tags_to_keep:
-            print('%s/%s also contains %s' % (path, fileName, tag))
+            print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s' % (path, fileName, tag), file=sys.stderr)
 
 
 def checkForRemainingTags(verse_to_check, index, path, fileName):
     all_other_tags = re.findall('<[^>]*?>', verse_to_check)
+
     for tag in all_other_tags:
         if tag not in tags_to_keep:
-            print('%s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1))
+            print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1), file=sys.stderr)
 
 
 def writeToCsv(path, fileName, verse_texts):
     with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
+
         for index, verse in enumerate(verse_texts):
             writer.writerow({'Verse': index + 1, 'Text': verse})
 
@@ -149,170 +353,57 @@ def getVerses(path, fileName):
             return
 
         # Handle Special Cases
-        if fileName == 'bofm-title?lang=spa':
+        if fileName == 'bofm-title%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
-
-            bofm_title_keep_contents = [
-                '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-                '<div[^>]*?class="subtitle">(.*?)</div>',
-                '<span[^>]*?class="dominant">(.*?)</span>',
-                '<div[^>]*?class="closingBlock">(.*?)</div>',
-                '<div[^>]*?class="closing">(.*?)</div>',
-            ]
-
-            bofm_title_remove_contents = [
-                '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
-                '<div[^>]*?id="media">(.*?)</div>',
-                '<li[^>]*?class="prev">(.*?)</li>',
-                '<li[^>]*?class="next">(.*?)</li>',
-                '<ul[^>]*?>',
-                '<p>',
-                '</p>',
-            ]
-
             verses = cleanVerse(bofm_title_keep_contents, bofm_title_remove_contents, verses)
             checkForRemainingTagsForSpecialCase(verses, path, fileName)
             writeToCsvSpecialCase(path, fileName, verses)
             return
 
-        elif path.endswith('bofm') and fileName == 'introduction?lang=spa':
+        elif path.endswith('bofm') and fileName == 'introduction%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
-
-            bofm_intro_keep_contents = [
-                '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-            ]
-
-            bofm_intro_remove_contents = [
-                '<a[^>]*?name="p[0-9]"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
-                '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-                '</a>',
-                '<div[^>]*?id="media">(.*?)</div>',
-                '<li[^>]*?class="prev">(.*?)</li>',
-                '<li[^>]*?class="next">(.*?)</li>',
-                '<ul[^>]*?>',
-                '<p>',
-                '</p>',
-            ]
-
             verses = cleanVerse(bofm_intro_keep_contents, bofm_intro_remove_contents, verses)
             checkForRemainingTagsForSpecialCase(verses, path, fileName)
             writeToCsvSpecialCase(path, fileName, verses)
             return
 
-        elif fileName == 'three?lang=spa':
+        elif fileName == 'three%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
             verses = cleanVerse(witnesses_keep_contents, witnesses_remove_contents, verses)
             checkForRemainingTagsForSpecialCase(verses, path, fileName)
             writeToCsvSpecialCase(path, fileName, verses)
             return
 
-        elif fileName == 'eight?lang=spa':
+        elif fileName == 'eight%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
             verses = cleanVerse(witnesses_keep_contents, witnesses_remove_contents, verses)
             checkForRemainingTagsForSpecialCase(verses, path, fileName)
             writeToCsvSpecialCase(path, fileName, verses)
             return
 
-        elif path.endswith('dc-testament') and fileName == 'introduction?lang=spa':
+        elif path.endswith('dc-testament') and fileName == 'introduction%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</p>[^<]*?</div>', data).group(1)
-
-            dc_intro_keep_contents = [
-                '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
-                '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-                '<div[^>]*?id="media">(.*?)</div>',
-                '<div[^>]*?class="preamble">(.*?)</div>',
-                '<h2>(.*?)</h2>',
-
-            ]
-
-            dc_intro_remove_contents = [
-                '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
-                '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-                '<div[^>]*?class="article"[^>]*?id="[^>]*?">',
-                '<div[^>]*?class="topic">',
-                '</a>',
-                '<p>','</p>',
-                '<li>','</li>',
-                '<ul[^>]*?>',
-            ]
-
             verses = cleanVerse(dc_intro_keep_contents, dc_intro_remove_contents, verses)
             checkForRemainingTagsForSpecialCase(verses, path, fileName)
             writeToCsvSpecialCase(path, fileName, verses)
             return
 
-        elif path.endswith('od') and fileName == "1?lang=spa":
+        elif path.endswith('od') and fileName == '1%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</p>[^<]*?</div>', data).group(1)
-
-            od_1_keep_contents = [
-                '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
-                '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-                '<div[^>]*?class="openingBlock">(.*?)</div>',
-                '<div[^>]*?class="closingBlock">(.*?)</div>',
-                '<div[^>]*?class="studyIntro">(.*?)</div>',
-                '<h2>(.*?)</h2>',
-            ]
-
-            od_1_remove_contents = [
-                '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
-                '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-                '</a>',
-                '<div[^>]*?class="topic">',
-                '<div[^>]*?id="media">(.*?)</div>',
-                '<p>','</p>',
-            ]
-
             verses = cleanVerse(od_1_keep_contents, od_1_remove_contents, verses)
             checkForRemainingTagsForSpecialCase(verses, path, fileName)
             writeToCsvSpecialCase(path, fileName, verses)
             return
 
-        elif path.endswith('od') and fileName == "2?lang=spa":
+        elif path.endswith('od') and fileName == '2%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', data).group(1)
-
-            od_2_keep_contents = [
-                '<h2>(.*?)</h2>',
-                '<div[^>]*?class="studyIntro">(.*?)</div>',
-                '<div[^>]*?class="addressee">(.*?)</div>',
-                '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-                '<div[^>]*?class="closing">(.*?)</div>',
-                '<div[^>]*?class="closingBlock">(.*?)</div>',
-                '<div[^>]*?class="openingBlock">(.*?)</div>',
-
-            ]
-
-            od_2_remove_contents = [
-                '<div[^>]*?id="media">(.*?)</div>',
-                '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
-                '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-                '</a>',
-                '<p>','</p>',
-                '<li[^>]*?class="prev">(.*?)</li>',
-                '<li[^>]*?class="next">(.*?)</li>',
-                '<ul[^>]*?>',
-            ]
-
             verses = cleanVerse(od_2_keep_contents, od_2_remove_contents, verses)
             checkForRemainingTagsForSpecialCase(verses, path, fileName)
             writeToCsvSpecialCase(path, fileName, verses)
             return
 
-        elif fileName == "fac-1?lang=spa":
+        elif fileName == 'fac-1%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</div>', data).group(1)
-
-            fac_1_keep_contents = [
-                '<table\s+class="definition">(.*?)</table>',
-            ]
-
-            fac_1_remove_contents = [
-                '<page-break[^>]*?page="32"></page-break>',
-                '<div[^>]*?class="verses\s+maps">',
-                '<p>','</p>',
-                '<div[^>]*?class="figure">',
-                '<td>','</td>',
-                '<tr>','</tr>',
-                '<h2>','</h2>',
-            ]
 
             # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
             verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">', verses)
@@ -321,28 +412,8 @@ def getVerses(path, fileName):
             writeToCsvSpecialCase(path, fileName, verses)
             return
 
-        elif fileName == "fac-2?lang=spa":
+        elif fileName == 'fac-2%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', data).group(1)
-
-            fac_2_keep_contents = [
-                '<table\s+class="definition">(.*?)</table>',
-                '<div[^>]*?class="figure">(.*?)</div>',
-            ]
-
-            fac_2_remove_contents = [
-                '<page-break[^>]*?page="40"></page-break>',
-                '<div[^>]*?class="verses\s+maps">',
-                '<wbr></wbr>',
-                '<p\s+uri="[^>]*?"\s+class="">',
-                '<p>','</p>',
-                '<td>','</td>',
-                '<tr>','</tr>',
-                '<h2>','</h2>',
-                '<li[^>]*?class="prev">(.*?)</li>',
-                '<li[^>]*?class="next">(.*?)</li>',
-                '<ul[^>]*?>',
-                '</div>',
-            ]
 
             # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
             verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">', verses)
@@ -351,29 +422,8 @@ def getVerses(path, fileName):
             writeToCsvSpecialCase(path, fileName, verses)
             return
 
-        elif fileName == "fac-3?lang=spa":
+        elif fileName == 'fac-3%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', data).group(1)
-
-            fac_3_keep_contents = [
-                '<table\s+class="definition">(.*?)</table>',
-                '<div[^>]*?class="figure">(.*?)</div>',
-            ]
-
-            fac_3_remove_contents = [
-                '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
-                '</a>',
-                '<page-break[^>]*?page="47"></page-break>',
-                '<div[^>]*?class="verses\s+maps">',
-                '<p\s+uri="[^>]*?"\s+class="">',
-                '<p>','</p>',
-                '<td>','</td>',
-                '<tr>','</tr>',
-                '<h2>','</h2>',
-                '<li[^>]*?class="prev">(.*?)</li>',
-                '<li[^>]*?class="next">(.*?)</li>',
-                '<ul[^>]*?>',
-                '</div>',
-            ]
 
             # Insert http://lds.org/scriptures/bc into image src. (Full img tag copied from existing tag in english database, but alt attribute changed to spanish version)
             verses = re.sub('<img[^>]*?>', '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">', verses)
@@ -382,7 +432,7 @@ def getVerses(path, fileName):
             writeToCsvSpecialCase(path, fileName, verses)
             return
 
-        elif path.endswith('ps') and fileName == "119?lang=spa":
+        elif path.endswith('ps') and fileName == '119%s' % language_code:
             verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.*?)</div>[^<]*?</div>', data).group(1)
 
             ps_119_pre_clean = [
@@ -435,7 +485,7 @@ def getVerses(path, fileName):
             try:
                 verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', data).group(1)
             except AttributeError:
-                print('Verses not found in %s/%s. Please Handle Manually' % (path, fileName))
+                print('>>>>>>>>>>>>>>>> Verses not found in %s/%s. Please Handle Manually' % (path, fileName), file=sys.stderr)
                 return
 
             # Get sub-string index for each verse number
@@ -468,59 +518,71 @@ def getVerses(path, fileName):
 # ----------------------------------------------- COMMAND LINE INTERFACE ----------------------------------------------- #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
-language_string = '?lang=spa'
+# Check if there is a command-line parameter for the directory to run the script against
+if len(sys.argv) > 1:
+    path_to_dir = sys.argv[1]
 
-path_to_dir = input("\nPlease input the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
-
-if path_to_dir == '.':
-    print('\n-- The following are all chapter files in the current directory: --\n')
 else:
-    print('\n-- The following are all chapter files in the directory /%s: --\n' % path_to_dir)
+    print("\nPlease enter the path to the directory you'd like to run this script against. (Enter '.' for current directory): ")
+    path_to_dir = input()
 
-for name in os.listdir(path_to_dir):
-    if name.endswith(language_string):
-        print(name)
+    if path_to_dir == '.':
+        print('\n-- The following are all chapter files in the current directory: --\n')
+    else:
+        print('\n-- The following are all chapter files in the directory /%s: --\n' % path_to_dir)
 
-if path_to_dir == '.':
-    print('\n-- The current directory also contains the following sub-directories: --\n')
+    for name in os.listdir(path_to_dir):
+        if name.endswith(language_code):
+            print(name)
+
+    if path_to_dir == '.':
+        print('\n-- The current directory also contains the following sub-directories: --\n')
+    else:
+        print('\n-- ' + path_to_dir  + ' also contains the following sub-directories: --\n')
+
+    print(next(os.walk(path_to_dir))[1])
+
+
+if len(sys.argv) > 2:
+    run_mode = sys.argv[2]
+
 else:
-    print('\n-- ' + path_to_dir  + ' also contains the following sub-directories: --\n')
+    print(
+        '\nWhat would you like to do?\n\n' +
+        '(1) Run for one specific file in this directory\n' +
+        '(2) Run for all files in this directory\n' +
+        '(3) Run for all files in this directory, and all subdirectories\n' +
+        '\nPlease enter 1, 2, or 3: '
+    )
+    run_mode = input()
 
-print(next(os.walk(path_to_dir))[1])
+while run_mode not in ['1', '2', '3']:
+    print('Please enter 1, 2, or 3: ')
+    run_mode = input()
 
-choice = input(
-    '\nWhat would you like to do?\n\n' +
-    '(1) Run for one specific file in this directory\n' +
-    '(2) Run for all files in this directory\n' +
-    '(3) Run for all files in this directory, and all subdirectories\n' +
-    '\nPlease enter 1, 2, or 3: '
-)
-
-while choice not in ['1', '2', '3']:
-    choice = input('Please enter 1, 2, or 3: ')
-
-if choice == '1':
-    filename = input('\nWhat is the filename to convert to CSV: ')
+if run_mode == '1':
+    print('\nWhat is the filename to convert to CSV: ')
+    filename = input()
     try:
         getVerses(path_to_dir, filename)
     except:
         print('Unable to convert: %s/%s' % (path_to_dir, filename))
 
-elif choice == '2':
+elif run_mode == '2':
     for name in os.listdir(path_to_dir):
-        if name.endswith(language_string):
+        if name.endswith(language_code):
             try:
                 getVerses(path_to_dir, name)
             except:
                 print('Unable to convert: %s/%s' % (path_to_dir, name))
 
-elif choice == '3':
+elif run_mode == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for file in files:
-            if file.endswith(language_string):
+            if file.endswith(language_code):
                 try:
                     getVerses(subdir, file)
                     # TODO: DO you want confirmation a chapter worked or not?
-                    print('%s/%s DONE' % (subdir, file))
+                    print('%s/%s DONE' % (subdir, file), file=sys.stderr)
                 except:
-                    print('Unable to convert: %s/%s' % (subdir, file))
+                    print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
