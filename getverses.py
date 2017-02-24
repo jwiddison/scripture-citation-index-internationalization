@@ -28,7 +28,7 @@ toc_files_to_skip = [
     'pgp%s' % language_code,
 ]
 
-# All the html tags that should be left over after cleaning
+# All the html tags that we expect to be left over after cleaning
 tags_to_keep = [
     # Signatures for 3 Witnesses
     '<div eid="2" words="2" class="signature">',
@@ -72,6 +72,7 @@ tags_to_keep = [
     '</div>',
 ]
 
+# Dictionary that holds all the lists of REGEX patterns used to clean the various chapters
 patterns = {
     # These are all the patterns we want remove without removing their contents.
     'standard_keep': [
@@ -311,7 +312,6 @@ patterns = {
         '<span[^>]*?class="line">',
         '</span>',
     ],
-
 }
 
 
@@ -341,7 +341,7 @@ def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
 def checkForRemainingTagsForSpecialCase(verses_block, path, fileName):
     all_other_tags = re.findall('<[^>]*?>', verses_block)
 
-    # Because we left <h2></h2> in the facsimiles and nowhere else
+    # Because we left <h2></h2> in the facsimiles and nowhere else, append <h2> and </h2> so it doesn't throw an error
     if fileName.startswith('fac'):
         tags_to_keep.append('<h2>')
         tags_to_keep.append('</h2>')
@@ -419,13 +419,12 @@ def fixFacsimileImgUrl(verses, new_url):
 
 def getVerses(path, fileName):
 
-    ### Properties ###
-
-    verse_number_locations = [] # Holds the index of the verse numbers
-    verse_text_start_locations = [] #Holds the substring index where verses start
-    verse_text_end_locations = [] # Holds the substring index where verses end
-    verse_html = [] # Holds raw Html for split verses
-    verse_texts = [] # Holds finished cleaned text for verses
+    # Reset Lists to empty each time
+    verse_number_locations = []
+    verse_text_start_locations = []
+    verse_text_end_locations = []
+    verse_html = []
+    verse_texts = []
 
     with open('%s/%s' % (path, fileName), 'r') as html:
         raw_html = html.read().replace('\n', ' ')
