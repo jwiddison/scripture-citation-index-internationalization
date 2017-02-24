@@ -47,6 +47,7 @@ tags_to_keep = [
     '<div eid="7" words="2" class="signature">',
     '<div eid="8" words="13" class="office">',
     '<div eid="7" words="2" class="signature">',
+    '<div eid="11" words="10" class="date">',
     # For OD 2
     '<div eid="7" words="2" class="salutation">',
     '<div eid="13" words="2" class="signature">',
@@ -54,7 +55,7 @@ tags_to_keep = [
     '<div eid="15" words="2" class="signature">',
     '<div eid="16" words="3" class="office">',
     '<div eid="13" words="2" class="signature">',
-    '</div>',
+    '<div eid="19" words="9" class="date">',
     # For Facsimilies
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">',
@@ -68,6 +69,7 @@ tags_to_keep = [
     '<span class="answer">',
     '<span class="question">',
     '</span>',
+    '</div>',
 ]
 
 # These are all the patterns we want remove without removing their contents.
@@ -283,6 +285,14 @@ fac_3_remove_contents = [
     '</div>',
 ]
 
+# The special-case tags for JS-H
+jsh_pre_clean = [
+    '<a[^>]*?>',
+    '</a>',
+    '<sup[^>]*?class="studyNoteMarker">(.*?)</sup>',
+    '<div[^>]*?class="summary">(.*?)</div>'
+]
+
 # The special-case tags for Psalm 119
 ps_119_pre_clean = [
     '<h2>(.*?)</h2>',
@@ -358,6 +368,40 @@ def writeToCsvSpecialCase(path, fileName, verses):
         writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
         writer.writerow({'Verse': 1, 'Text': verses})
 
+def processStandardChapter(verses, path, fileName):
+
+    verse_number_locations = [] # Holds the index of the verse numbers
+    verse_text_start_locations = [] #Holds the substring index where verses start
+    verse_text_end_locations = [] # Holds the substring index where verses end
+    verse_html = [] # Holds raw Html for split verses
+    verse_texts = [] # Holds finished cleaned text for verses
+
+    # Get sub-string index for each verse number
+    for index in re.finditer('<span class="verse">', verses):
+        verse_number_locations.append(index.end() + 1)
+
+    # Get index for the beginning of each verse
+    for index in re.finditer('</p>', verses):
+        verse_text_end_locations.append(index.start())
+
+    # Get index for the end of each verse
+    for index in range(len(verse_number_locations)):
+        location = verses.find('</span>', verse_number_locations[index])
+        verse_text_start_locations.append(location + len('</span>'))
+
+    # Get raw HTML for verses using string slicing
+    for index in range(len(verse_number_locations)):
+        verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
+
+    # Clean verse, check for other tags, and write cleaned text into verse_texts list
+    for index, verse in enumerate(verse_html):
+        verse = cleanVerse(general_patterns_keep_contents, general_patterns_remove_contents, verse)
+        checkForRemainingTags(verse, index, path, fileName)
+        verse_texts.append(verse)
+
+    writeToCsv(path, fileName, verse_texts)
+
+    return
 
 def processSpecialCaseChapter(keep_list, remove_list, verses, path, fileName):
     verses = cleanVerse(keep_list, remove_list, verses)
@@ -439,6 +483,15 @@ def getVerses(path, fileName):
             processSpecialCaseChapter(fac_3_keep_contents, fac_3_remove_contents, verses, path, fileName)
             return
 
+        elif path.endswith('js-h') and fileName == '1%s' % language_code:
+            verses = re.search('<div[^>]*?class="verses"[^>]*?id="0">(.*?)</div>[^>]*?<ul class="prev-next[^>]*?large">', raw_html).group(1)
+
+            for pattern in jsh_pre_clean:
+                verses = re.sub(pattern, '', verses)
+
+            processStandardChapter(verses, path, fileName)
+            return
+
         elif path.endswith('ps') and fileName == '119%s' % language_code:
             verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.*?)</div>[^<]*?</div>', raw_html).group(1)
 
@@ -477,30 +530,8 @@ def getVerses(path, fileName):
                 print('>>>>>>>>>>>>>>>> Verses not found in %s/%s. Please Handle Manually' % (path, fileName), file=sys.stderr)
                 return
 
-            # Get sub-string index for each verse number
-            for index in re.finditer('<span class="verse">', verses):
-                verse_number_locations.append(index.end() + 1)
+            processStandardChapter(verses, path, fileName)
 
-            # Get index for the beginning of each verse
-            for index in re.finditer('</p>', verses):
-                verse_text_end_locations.append(index.start())
-
-            # Get index for the end of each verse
-            for index in range(len(verse_number_locations)):
-                location = verses.find('</span>', verse_number_locations[index])
-                verse_text_start_locations.append(location + len('</span>'))
-
-            # Get raw HTML for verses using string slicing
-            for index in range(len(verse_number_locations)):
-                verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
-
-            # Clean verse, check for other tags, and write cleaned text into verse_texts list
-            for index, verse in enumerate(verse_html):
-                verse = cleanVerse(general_patterns_keep_contents, general_patterns_remove_contents, verse)
-                checkForRemainingTags(verse, index, path, fileName)
-                verse_texts.append(verse)
-
-            writeToCsv(path, fileName, verse_texts)
 
 
 # ---------------------------------------------------------------------------------------------------------------------- #
