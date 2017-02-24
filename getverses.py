@@ -308,12 +308,13 @@ ps_119_pre_clean = [
 
 ps_119_keep_contents = [
     '<span[^>]*?class="clarityWord">(.*?)</span>',
-    '<span[^>]*?class="line">(.*?)</span>',
 ]
 
 ps_119_remove_contents = [
     '</p>',
     '<span[^>]*?class="verse">[0-9]+[^<]*?</span>',
+    '<span[^>]*?class="line">',
+    '</span>',
 ]
 
 
