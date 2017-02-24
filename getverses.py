@@ -73,7 +73,6 @@ tags_to_keep = [
 # These are all the patterns we want remove without removing their contents.
 general_patterns_keep_contents = [
     '<div[^>]*?class="closing">(.*?)</div>',
-    # '<div[^>]*?class="closingBlock">(.*?)</div>',
     '<div[^>]*?class="topic">(.*?)</div>',
     '<page-break[^>]*?>(.*?)</page-break>',
     '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="la">(.*?)</span>',
@@ -104,7 +103,6 @@ bofm_title_keep_contents = [
     '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
     '<div[^>]*?class="subtitle">(.*?)</div>',
     '<span[^>]*?class="dominant">(.*?)</span>',
-    # '<div[^>]*?class="closingBlock">(.*?)</div>',
     '<div[^>]*?class="closing">(.*?)</div>',
 ]
 
@@ -137,8 +135,7 @@ bofm_intro_remove_contents = [
 
 # The special-case tags for the 2 witnesses sections (they're the same)
 witnesses_keep_contents = [
-    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-    # '<div[^>]*?class="closingBlock">(.*?)</div>',
+    '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*)</div>',
 ]
 
 witnesses_remove_contents = [
@@ -179,7 +176,6 @@ od_1_keep_contents = [
     '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
     '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
     '<div[^>]*?class="openingBlock">(.*?)</div>',
-    # '<div[^>]*?class="closingBlock">(.*?)</div>',
     '<div[^>]*?class="studyIntro">(.*?)</div>',
     '<h2>(.*?)</h2>',
 ]
@@ -201,7 +197,6 @@ od_2_keep_contents = [
     '<div[^>]*?class="addressee">(.*?)</div>',
     '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
     '<div[^>]*?class="closing">(.*?)</div>',
-    # '<div[^>]*?class="closingBlock">(.*?)</div>',
     '<div[^>]*?class="openingBlock">(.*?)</div>',
 
 ]
