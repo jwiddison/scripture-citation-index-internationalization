@@ -19,7 +19,6 @@ fac_1_img_url = '<img src="http://lds.org/scriptures/bc/scriptures/content/engli
 fac_2_img_url = '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">'
 fac_3_img_url = '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">'
 
-
 # These are the filenames for table of contents files, and we don't need to convert those.
 toc_files_to_skip = [
     'bible%s' % language_code,
@@ -296,7 +295,7 @@ patterns = {
     ],
 
     'jsh_remove': [
-
+        # Empty for Spanish
     ],
 
     # The special-case tags for Psalm 119
@@ -322,6 +321,24 @@ patterns = {
         '<span[^>]*?class="line">',
         '</span>',
     ],
+}
+
+# The REGEX patterns that match the verse content for each chapter
+search = {
+    # 'general' handles all chapters except the special cases that follow
+    'general': '<div\s+class="verses"\s+id="[^"]*">(.+?)</div>',
+    'bofm_title': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
+    'bofm_intro': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
+    'three': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
+    'eight': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
+    'dc_intro': '<div\s+id="primary">(.*?)</p>[^<]*?</div>',
+    'od1': '<div\s+id="primary">(.*?)</p>[^<]*?</div>',
+    'od2': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
+    'fac1': '<div\s+id="primary">(.*?)</div>',
+    'fac2': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
+    'fac3': '<div\s+id="primary">(.*?)</ul>[^>]*?</div>',
+    'jsh': '<div[^>]*?class="verses"[^>]*?id="0">(.*?)</div>[^>]*?<ul class="prev-next[^>]*?large">',
+    'ps119': '<div\s+class="verses"\s+id="[^"]*">(.*?)</div>[^<]*?</div>',
 }
 
 
@@ -351,15 +368,16 @@ def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
 def checkForRemainingTagsForSpecialCase(verses_block, path, fileName):
     all_other_tags = re.findall('<[^>]*?>', verses_block)
 
-    # Because we left <h2></h2> in the facsimiles and nowhere else, append <h2> and </h2> so it doesn't throw an error
-    if fileName.startswith('fac'):
-        tags_to_keep.append('<h2>')
-        tags_to_keep.append('</h2>')
-        tags_to_keep.append('<br />')
+    # Because we left <h2></h2> in the facsimiles and added <br /> and nowhere else, append <h2>, </h2>, <br /> so it doesn't throw an error
+    tags_to_keep_if_facsimilie = ['<h2>', '</h2>', '<br />']
 
     for tag in all_other_tags:
         if tag not in tags_to_keep:
-            print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s' % (path, fileName, tag), file=sys.stderr)
+            if tag in tags_to_keep_if_facsimilie:
+                if fileName.startswith('fac'):
+                    pass
+            else:
+                print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s' % (path, fileName, tag), file=sys.stderr)
 
 
 def checkForRemainingTags(verse_to_check, index, path, fileName):
@@ -367,7 +385,12 @@ def checkForRemainingTags(verse_to_check, index, path, fileName):
 
     for tag in all_other_tags:
         if tag not in tags_to_keep:
-            print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1), file=sys.stderr)
+            # Have to include a special check because JS-H also includes <br /> in the paragraphs at the end
+            if path.endswith('js-h') and fileName == '1%s' % language_code:
+                if tag == '<br />':
+                    pass
+            else:
+                print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1), file=sys.stderr)
 
 
 def writeToCsv(path, fileName, verse_texts):
@@ -428,6 +451,11 @@ def fixFacsimileImgUrl(verses, new_url):
     return re.sub('<img[^>]*?>', new_url, verses)
 
 
+def searchForVerseContent(pattern, raw_html):
+    return re.search(pattern, raw_html).group(1)
+
+
+
 def getVerses(path, fileName):
 
     # Reset Lists to empty each time
@@ -446,49 +474,49 @@ def getVerses(path, fileName):
 
         # Handle Special Cases
         if fileName == 'bofm-title%s' % language_code:
-            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', raw_html).group(1)
+            verses = searchForVerseContent(search['bofm_title'], raw_html)
             processSpecialCaseChapter(patterns['bofm_title_keep'], patterns['bofm_title_remove'], verses, path, fileName)
             return
 
         elif path.endswith('bofm') and fileName == 'introduction%s' % language_code:
-            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', raw_html).group(1)
+            verses = searchForVerseContent(search['bofm_intro'], raw_html)
             processSpecialCaseChapter(patterns['bofm_intro_keep'], patterns['bofm_intro_remove'], verses, path, fileName)
             return
 
         elif fileName == 'three%s' % language_code:
-            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', raw_html).group(1)
+            verses = searchForVerseContent(search['three'], raw_html)
             processSpecialCaseChapter(patterns['witnesses_keep'], patterns['witnesses_remove'], verses, path, fileName)
             return
 
         elif fileName == 'eight%s' % language_code:
-            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', raw_html).group(1)
+            verses = searchForVerseContent(search['eight'], raw_html)
             processSpecialCaseChapter(patterns['witnesses_keep'], patterns['witnesses_remove'], verses, path, fileName)
             return
 
         elif path.endswith('dc-testament') and fileName == 'introduction%s' % language_code:
-            verses = re.search('<div\s+id="primary">(.*?)</p>[^<]*?</div>', raw_html).group(1)
+            verses = searchForVerseContent(search['dc_intro'], raw_html)
             processSpecialCaseChapter(patterns['dc_intro_keep'], patterns['dc_intro_remove'], verses, path, fileName)
             return
 
         elif path.endswith('od') and fileName == '1%s' % language_code:
-            verses = re.search('<div\s+id="primary">(.*?)</p>[^<]*?</div>', raw_html).group(1)
+            verses = searchForVerseContent(search['od1'], raw_html)
             processSpecialCaseChapter(patterns['od_1_keep'], patterns['od_1_remove'], verses, path, fileName)
             return
 
         elif path.endswith('od') and fileName == '2%s' % language_code:
-            verses = re.search('<div\s+id="primary">(.*?)</ul>[^<]*?</div>', raw_html).group(1)
+            verses = searchForVerseContent(search['od2'], raw_html)
             processSpecialCaseChapter(patterns['od_2_keep'], patterns['od_2_remove'], verses, path, fileName)
             return
 
         elif fileName == 'fac-1%s' % language_code:
-            verses = re.search('<div\s+id="primary">(.*?)</div>', raw_html).group(1)
+            verses = searchForVerseContent(search['fac1'], raw_html)
             verses = fixFacsimileImgUrl(verses, fac_1_img_url)
             verses = re.sub('<tr>', '<tr><br />', verses)
             processSpecialCaseChapter(patterns['fac_1_keep'], patterns['fac_1_remove'], verses, path, fileName)
             return
 
         elif fileName == 'fac-2%s' % language_code:
-            verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', raw_html).group(1)
+            verses = searchForVerseContent(search['fac2'], raw_html)
             verses = fixFacsimileImgUrl(verses, fac_2_img_url)
             verses = re.sub('<tr>', '<tr><br />', verses)
             verses = re.sub('</table>', '<br /></table>', verses)
@@ -497,7 +525,7 @@ def getVerses(path, fileName):
             return
 
         elif fileName == 'fac-3%s' % language_code:
-            verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', raw_html).group(1)
+            verses = searchForVerseContent(search['fac3'], raw_html)
             verses = fixFacsimileImgUrl(verses, fac_3_img_url)
             verses = re.sub('<tr>', '<tr><br />', verses)
             verses = re.sub('</table>', '<br /></table>', verses)
@@ -506,37 +534,31 @@ def getVerses(path, fileName):
             return
 
         elif path.endswith('js-h') and fileName == '1%s' % language_code:
-            verses = re.search('<div[^>]*?class="verses"[^>]*?id="0">(.*?)</div>[^>]*?<ul class="prev-next[^>]*?large">', raw_html).group(1)
+            verses = searchForVerseContent(search['jsh'], raw_html)
 
             for pattern in patterns['jsh_pre_clean']:
                 verses = re.sub(pattern, '', verses)
 
-            # Get sub-string index for each verse number
             for index in re.finditer('<span class="verse">', verses):
                 verse_number_locations.append(index.end() + 1)
 
-            # Get index for the beginning of each verse
             for index in re.finditer('</p>', verses):
                 verse_text_end_locations.append(index.start())
 
-            # Get index for the end of each verse
             for index in range(len(verse_number_locations)):
                 location = verses.find('</span>', verse_number_locations[index])
                 verse_text_start_locations.append(location + len('</span>'))
 
-            # Get raw HTML for verses using string slicing
             for index in range(len(verse_number_locations)):
                 verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
 
-            # print(verse_html)
-            # print(verses)
-
+            # Add the paragraphs that come after the end of the last verse.
             verse_html.append(re.search('<ol\s+class="symbol"><li>(.*?)</li></ol>', verses).group(1))
 
-            # Clean verse, check for other tags, and write cleaned text into verse_texts list
             for index, verse in enumerate(verse_html):
                 verse = cleanVerse(patterns['jsh_keep'], patterns['jsh_remove'], verse)
 
+                # Handle the paragraphs that occur after the last verse
                 verse = re.sub('</p><p>', '<br /><br />', verse)
                 verse = re.sub('<p>', '', verse)
                 verse = re.sub('</p>', '', verse)
@@ -548,7 +570,7 @@ def getVerses(path, fileName):
             return
 
         elif path.endswith('ps') and fileName == '119%s' % language_code:
-            verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.*?)</div>[^<]*?</div>', raw_html).group(1)
+            verses = searchForVerseContent(search['ps119'], raw_html)
 
             for pattern in patterns['ps_119_pre_clean']:
                 verses = re.sub(pattern, '', verses)
@@ -574,16 +596,14 @@ def getVerses(path, fileName):
                 verse_texts.append(verse)
 
             writeToCsv(path, fileName, verse_texts)
-
             return
 
         # Handle All Other Files Besides Special Cases
         else:
             try:
-                verses = re.search('<div\s+class="verses"\s+id="[^"]*">(.+?)</div>', raw_html).group(1)
+                verses = searchForVerseContent(search['general'], raw_html)
             except AttributeError:
                 print('>>>>>>>>>>>>>>>> Unable to get verses in file: %s/%s.' % (path, fileName), file=sys.stderr)
-                return
 
             processStandardChapter(verses, path, fileName)
 
