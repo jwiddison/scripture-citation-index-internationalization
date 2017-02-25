@@ -57,6 +57,7 @@ tags_to_keep = [
     '<div eid="13" words="2" class="signature">',
     '<div eid="19" words="9" class="date">',
     # For Facsimilies
+    '<br />',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">',
@@ -472,18 +473,25 @@ def getVerses(path, fileName):
         elif fileName == 'fac-1%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</div>', raw_html).group(1)
             verses = fixFacsimileImgUrl(verses, fac_1_img_url)
+            verses = re.sub('<tr>', '<tr><br />', verses)
             processSpecialCaseChapter(patterns['fac_1_keep'], patterns['fac_1_remove'], verses, path, fileName)
             return
 
         elif fileName == 'fac-2%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', raw_html).group(1)
             verses = fixFacsimileImgUrl(verses, fac_2_img_url)
+            verses = re.sub('<tr>', '<tr><br />', verses)
+            verses = re.sub('</table>', '<br /></table>', verses)
+
             processSpecialCaseChapter(patterns['fac_2_keep'], patterns['fac_2_remove'], verses, path, fileName)
             return
 
         elif fileName == 'fac-3%s' % language_code:
             verses = re.search('<div\s+id="primary">(.*?)</ul>[^>]*?</div>', raw_html).group(1)
             verses = fixFacsimileImgUrl(verses, fac_3_img_url)
+            verses = re.sub('<tr>', '<tr><br />', verses)
+            verses = re.sub('</table>', '<br /></table>', verses)
+
             processSpecialCaseChapter(patterns['fac_3_keep'], patterns['fac_3_remove'], verses, path, fileName)
             return
 
@@ -605,8 +613,8 @@ elif run_mode == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for file in files:
             if file.endswith(language_code):
-                # try:
-                getVerses(subdir, file)
+                try:
+                    getVerses(subdir, file)
                     # print('%s/%s DONE' % (subdir, file), file=sys.stderr)
-                # except:
-                #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
+                except:
+                    print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
