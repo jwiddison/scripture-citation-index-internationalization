@@ -57,7 +57,6 @@ tags_to_keep = [
     '<div eid="13" words="2" class="signature">',
     '<div eid="19" words="9" class="date">',
     # For Facsimilies
-    '<br />',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">',
@@ -290,6 +289,16 @@ patterns = {
         '<div[^>]*?class="summary">(.*?)</div>'
     ],
 
+    'jsh_keep': [
+        '<span\s+class="label">(.*?)</span>',
+        '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
+        '<div\s+class="">(.*?)</div>'
+    ],
+
+    'jsh_remove': [
+
+    ],
+
     # The special-case tags for Psalm 119
     'ps_119_pre_clean': [
         '<h2>(.*?)</h2>',
@@ -346,6 +355,7 @@ def checkForRemainingTagsForSpecialCase(verses_block, path, fileName):
     if fileName.startswith('fac'):
         tags_to_keep.append('<h2>')
         tags_to_keep.append('</h2>')
+        tags_to_keep.append('<br />')
 
     for tag in all_other_tags:
         if tag not in tags_to_keep:
@@ -501,7 +511,40 @@ def getVerses(path, fileName):
             for pattern in patterns['jsh_pre_clean']:
                 verses = re.sub(pattern, '', verses)
 
-            processStandardChapter(verses, path, fileName)
+            # Get sub-string index for each verse number
+            for index in re.finditer('<span class="verse">', verses):
+                verse_number_locations.append(index.end() + 1)
+
+            # Get index for the beginning of each verse
+            for index in re.finditer('</p>', verses):
+                verse_text_end_locations.append(index.start())
+
+            # Get index for the end of each verse
+            for index in range(len(verse_number_locations)):
+                location = verses.find('</span>', verse_number_locations[index])
+                verse_text_start_locations.append(location + len('</span>'))
+
+            # Get raw HTML for verses using string slicing
+            for index in range(len(verse_number_locations)):
+                verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
+
+            # print(verse_html)
+            # print(verses)
+
+            verse_html.append(re.search('<ol\s+class="symbol"><li>(.*?)</li></ol>', verses).group(1))
+
+            # Clean verse, check for other tags, and write cleaned text into verse_texts list
+            for index, verse in enumerate(verse_html):
+                verse = cleanVerse(patterns['jsh_keep'], patterns['jsh_remove'], verse)
+
+                verse = re.sub('</p><p>', '<br /><br />', verse)
+                verse = re.sub('<p>', '', verse)
+                verse = re.sub('</p>', '', verse)
+
+                checkForRemainingTags(verse, index, path, fileName)
+                verse_texts.append(verse)
+
+            writeToCsv(path, fileName, verse_texts)
             return
 
         elif path.endswith('ps') and fileName == '119%s' % language_code:
@@ -613,8 +656,8 @@ elif run_mode == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for file in files:
             if file.endswith(language_code):
-                try:
-                    getVerses(subdir, file)
+                # try:
+                getVerses(subdir, file)
                     # print('%s/%s DONE' % (subdir, file), file=sys.stderr)
-                except:
-                    print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
+                # except:
+                #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
