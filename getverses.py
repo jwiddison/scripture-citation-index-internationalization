@@ -75,14 +75,15 @@ tags_to_keep = [
     '<span class="question">',
     '</span>',
     '</div>',
+    # Added to preserve tables in special cases
+    '<br />',
 ]
 
 
-# Because we left <h2></h2> in the facsimiles and added <br /> and nowhere else.  Need this for additional checks so we don't throw an error
+# Because we left <h2></h2> in the facsimiles and nowhere else.  Need this for additional checks so we don't throw an error
 tags_to_keep_if_facsimile = [
     '<h2>',
     '</h2>',
-    '<br />',
 ]
 
 
@@ -172,6 +173,7 @@ patterns = {
         '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
         '<div[^>]*?id="media">(.*?)</div>',
         '<div[^>]*?class="preamble">(.*?)</div>',
+        '<div[^>]*?class="figure">(.*?)</div>',
         '<h2>(.*?)</h2>',
 
     ],
@@ -187,14 +189,15 @@ patterns = {
         '<li>',
         '</li>',
         '<ul[^>]*?>',
+        '</ul>',
     ],
 
     # The special-case tags for Official Declaration 1
     'od_1_keep': [
         '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
-        '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-        '<div[^>]*?class="openingBlock">(.*?)</div>',
         '<div[^>]*?class="studyIntro">(.*?)</div>',
+        # '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
+        # '<div[^>]*?class="openingBlock">(.*?)</div>',
         '<h2>(.*?)</h2>',
     ],
 
@@ -202,7 +205,7 @@ patterns = {
         '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
         '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
         '</a>',
-        '<div[^>]*?class="topic">',
+        # '<div[^>]*?class="topic">',
         '<div[^>]*?id="media">(.*?)</div>',
         '<p>',
         '</p>',
@@ -348,7 +351,7 @@ search = {
     'bofm_intro': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
     'three': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
     'eight': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
-    'dc_intro': '<div\s+id="primary">(.*?)</p>[^<]*?</div>',
+    'dc_intro': '<div\s+id="primary">(.*?)</p>[^<]*?</div>[^<]*?<ul\s+class="prev-next\s+large">',
     'od1': '<div\s+id="primary">(.*?)</p>[^<]*?</div>',
     'od2': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
     'fac_1': '<div\s+id="primary">(.*?)</div>',
@@ -423,11 +426,7 @@ def checkForRemainingTags(verse_to_check, index, path, fileName):
 
     for tag in all_other_tags:
         if tag not in tags_to_keep:
-
-            # Include a special check because JS-H also includes <br /> in the paragraphs at the end
-            if not path.endswith('js-h') and fileName == '1%s' % language_code:
-                if tag != '<br />':
-                    print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1), file=sys.stderr)
+            print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1), file=sys.stderr)
 
 
 # Checks for any remaining tags in special case chapters
@@ -436,7 +435,8 @@ def checkForRemainingTagsForSpecialCase(verses_block, path, fileName):
 
     for tag in all_other_tags:
         if tag not in tags_to_keep:
-            # Check if tag matches 3 additional tags found in facsimiles
+
+            # Check if tag matches additional <h2> tags found in facsimiles
             if tag not in tags_to_keep_if_facsimile:
                 if not fileName.startswith('fac'):
                     print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s' % (path, fileName, tag), file=sys.stderr)
@@ -551,6 +551,12 @@ def extractContents(path, fileName):
 
         elif path.endswith(file_paths['dc']) and fileName == file_names['dc_intro']:
             verses = searchForVerseContent(search['dc_intro'], raw_html)
+
+            # Preserve table in list of names
+            verses = re.sub('<ul\s+class="noMarker">', '<br />', verses)
+            verses = re.sub('<li>', '<br />', verses)
+            verses = re.sub('</ul>', '<br />', verses)
+
             processSpecialCaseChapter(patterns['dc_intro_keep'], patterns['dc_intro_remove'], verses, path, fileName)
             return
 
@@ -566,13 +572,16 @@ def extractContents(path, fileName):
 
         elif fileName == file_names['fac_1']:
             verses = searchForVerseContent(search['fac_1'], raw_html)
+
             verses = fixFacsimileImgUrl(verses, img_urls['fac_1'])
             verses = re.sub('<tr>', '<tr><br />', verses)
+
             processSpecialCaseChapter(patterns['fac_1_keep'], patterns['fac_1_remove'], verses, path, fileName)
             return
 
         elif fileName == file_names['fac_2']:
             verses = searchForVerseContent(search['fac_2'], raw_html)
+
             verses = fixFacsimileImgUrl(verses, img_urls['fac_2'])
             verses = re.sub('<tr>', '<tr><br />', verses)
             verses = re.sub('</table>', '<br /></table>', verses)
@@ -582,6 +591,7 @@ def extractContents(path, fileName):
 
         elif fileName == file_names['fac_3']:
             verses = searchForVerseContent(search['fac_3'], raw_html)
+
             verses = fixFacsimileImgUrl(verses, img_urls['fac_3'])
             verses = re.sub('<tr>', '<tr><br />', verses)
             verses = re.sub('</table>', '<br /></table>', verses)
