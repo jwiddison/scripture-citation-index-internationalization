@@ -11,13 +11,18 @@ import sys    # To redirect errors to STDERR, and be able to access command-line
 # ----------------------------------------------------  CONSTANTS ------------------------------------------------------ #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
+
 # Language code.  Change last 3 letters to run for a new language
 language_code = '?lang=spa'
 
-# URLs for the 3 images for the facimilies.  Will need to change alt tag for new languages
-fac_1_img_url = '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">'
-fac_2_img_url = '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">'
-fac_3_img_url = '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">'
+
+# Dictionary of URLs for the 3 images for the facimilies.  Will need to change alt tag for new languages
+img_urls = {
+    'fac_1': '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">',
+    'fac_2': '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">',
+    'fac_3': '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">',
+}
+
 
 # These are the filenames for table of contents files, and we don't need to convert those.
 toc_files_to_skip = [
@@ -26,6 +31,7 @@ toc_files_to_skip = [
     'dc-testament%s' % language_code,
     'pgp%s' % language_code,
 ]
+
 
 # All the html tags that we expect to be left over after cleaning
 tags_to_keep = [
@@ -71,8 +77,14 @@ tags_to_keep = [
     '</div>',
 ]
 
+
 # Because we left <h2></h2> in the facsimiles and added <br /> and nowhere else.  Need this for additional checks so we don't throw an error
-tags_to_keep_if_facsimile = ['<h2>', '</h2>', '<br />']
+tags_to_keep_if_facsimile = [
+    '<h2>',
+    '</h2>',
+    '<br />',
+]
+
 
 # Dictionary that holds all the lists of REGEX patterns used to clean the various chapters
 patterns = {
@@ -298,7 +310,7 @@ patterns = {
     ],
 
     'jsh_remove': [
-        # Empty for Spanish
+        # Empty for Spanish.  Leaving in case its needed for other languages
     ],
 
     # The special-case tags for Psalm 119
@@ -326,6 +338,7 @@ patterns = {
     ],
 }
 
+
 # The REGEX patterns that match the verse content for each chapter
 search = {
     # 'general' handles all chapters except the special cases that follow
@@ -338,19 +351,49 @@ search = {
     'dc_intro': '<div\s+id="primary">(.*?)</p>[^<]*?</div>',
     'od1': '<div\s+id="primary">(.*?)</p>[^<]*?</div>',
     'od2': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
-    'fac1': '<div\s+id="primary">(.*?)</div>',
-    'fac2': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
-    'fac3': '<div\s+id="primary">(.*?)</ul>[^>]*?</div>',
-    'jsh': '<div[^>]*?class="verses"[^>]*?id="0">(.*?)</div>[^>]*?<ul class="prev-next[^>]*?large">',
+    'fac_1': '<div\s+id="primary">(.*?)</div>',
+    'fac_2': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
+    'fac_3': '<div\s+id="primary">(.*?)</ul>[^>]*?</div>',
+    'js_h': '<div[^>]*?class="verses"[^>]*?id="0">(.*?)</div>[^>]*?<ul class="prev-next[^>]*?large">',
     'ps119': '<div\s+class="verses"\s+id="[^"]*">(.*?)</div>[^<]*?</div>',
     # Matches all remaining html tags.  For use in check after cleaning
     'remaining': '<[^>]*?>',
+    # Used to match <img> tags in facsimilies
+    'facsimile_img': '<img[^>]*?>',
+}
+
+
+# Dictionary that holds different file path names for checking special cases
+file_paths = {
+    'bofm': 'bofm',
+    'dc': 'dc-testament',
+    'od': 'od',
+    'js_h': 'js-h',
+    'ps': 'ps',
+}
+
+
+# Dictionary that holds file names for checking special cases
+file_names = {
+    'bofm_title': 'bofm-title%s' % language_code,
+    'bofm_intro': 'introduction%s' % language_code,
+    'three': 'three%s' % language_code,
+    'eight': 'eight%s' % language_code,
+    'dc_intro': 'introduction%s' % language_code,
+    'od_1': '1%s' % language_code,
+    'od_2': '2%s' % language_code,
+    'fac_1': 'fac-1%s' % language_code,
+    'fac_2': 'fac-2%s' % language_code,
+    'fac_3': 'fac-3%s' % language_code,
+    'js_h': '1%s' % language_code,
+    'ps_119': '119%s' % language_code,
 }
 
 
 # ---------------------------------------------------------------------------------------------------------------------- #
 # -----------------------------------------------------  HELPERS  ------------------------------------------------------ #
 # ---------------------------------------------------------------------------------------------------------------------- #
+
 
 # Given a verse as a string, and 2 lists of regex patterns, strips unwanted html tags out of verse, and returns cleaned string
 def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
@@ -450,22 +493,26 @@ def processStandardChapter(verses, path, fileName):
     return
 
 
+# Similar to above method to process chapter, but smaller for special cases because they
+#     don't need to be broken into verses
 def processSpecialCaseChapter(keep_list, remove_list, verses, path, fileName):
     verses = cleanVerse(keep_list, remove_list, verses)
     checkForRemainingTagsForSpecialCase(verses, path, fileName)
     writeToCsvSpecialCase(path, fileName, verses)
 
 
+# Replaces <img> tag in facsimile chapters
 def fixFacsimileImgUrl(verses, new_url):
-    return re.sub('<img[^>]*?>', new_url, verses)
+    return re.sub(search['facsimile_img'], new_url, verses)
 
 
+# Simple helper that will get the verses block from raw html given the pattern to find it
 def searchForVerseContent(pattern, raw_html):
     return re.search(pattern, raw_html).group(1)
 
 
-
-def getVerses(path, fileName):
+# Main processing method.  Above helpers are all called at some point in here
+def extractContents(path, fileName):
 
     # Reset Lists to empty each time
     verse_number_locations = []
@@ -482,68 +529,68 @@ def getVerses(path, fileName):
             return
 
         # Handle Special Cases
-        if fileName == 'bofm-title%s' % language_code:
+        if fileName == file_names['bofm_title']:
             verses = searchForVerseContent(search['bofm_title'], raw_html)
             processSpecialCaseChapter(patterns['bofm_title_keep'], patterns['bofm_title_remove'], verses, path, fileName)
             return
 
-        elif path.endswith('bofm') and fileName == 'introduction%s' % language_code:
+        elif path.endswith(file_paths['bofm']) and fileName == file_names['bofm_intro']:
             verses = searchForVerseContent(search['bofm_intro'], raw_html)
             processSpecialCaseChapter(patterns['bofm_intro_keep'], patterns['bofm_intro_remove'], verses, path, fileName)
             return
 
-        elif fileName == 'three%s' % language_code:
+        elif fileName == file_names['three']:
             verses = searchForVerseContent(search['three'], raw_html)
             processSpecialCaseChapter(patterns['witnesses_keep'], patterns['witnesses_remove'], verses, path, fileName)
             return
 
-        elif fileName == 'eight%s' % language_code:
+        elif fileName == file_names['eight']:
             verses = searchForVerseContent(search['eight'], raw_html)
             processSpecialCaseChapter(patterns['witnesses_keep'], patterns['witnesses_remove'], verses, path, fileName)
             return
 
-        elif path.endswith('dc-testament') and fileName == 'introduction%s' % language_code:
+        elif path.endswith(file_paths['dc']) and fileName == file_names['dc_intro']:
             verses = searchForVerseContent(search['dc_intro'], raw_html)
             processSpecialCaseChapter(patterns['dc_intro_keep'], patterns['dc_intro_remove'], verses, path, fileName)
             return
 
-        elif path.endswith('od') and fileName == '1%s' % language_code:
+        elif path.endswith(file_paths['od']) and fileName == file_names['od_1']:
             verses = searchForVerseContent(search['od1'], raw_html)
             processSpecialCaseChapter(patterns['od_1_keep'], patterns['od_1_remove'], verses, path, fileName)
             return
 
-        elif path.endswith('od') and fileName == '2%s' % language_code:
+        elif path.endswith(file_paths['od']) and fileName == file_names['od_2']:
             verses = searchForVerseContent(search['od2'], raw_html)
             processSpecialCaseChapter(patterns['od_2_keep'], patterns['od_2_remove'], verses, path, fileName)
             return
 
-        elif fileName == 'fac-1%s' % language_code:
-            verses = searchForVerseContent(search['fac1'], raw_html)
-            verses = fixFacsimileImgUrl(verses, fac_1_img_url)
+        elif fileName == file_names['fac_1']:
+            verses = searchForVerseContent(search['fac_1'], raw_html)
+            verses = fixFacsimileImgUrl(verses, img_urls['fac_1'])
             verses = re.sub('<tr>', '<tr><br />', verses)
             processSpecialCaseChapter(patterns['fac_1_keep'], patterns['fac_1_remove'], verses, path, fileName)
             return
 
-        elif fileName == 'fac-2%s' % language_code:
-            verses = searchForVerseContent(search['fac2'], raw_html)
-            verses = fixFacsimileImgUrl(verses, fac_2_img_url)
+        elif fileName == file_names['fac_2']:
+            verses = searchForVerseContent(search['fac_2'], raw_html)
+            verses = fixFacsimileImgUrl(verses, img_urls['fac_2'])
             verses = re.sub('<tr>', '<tr><br />', verses)
             verses = re.sub('</table>', '<br /></table>', verses)
 
             processSpecialCaseChapter(patterns['fac_2_keep'], patterns['fac_2_remove'], verses, path, fileName)
             return
 
-        elif fileName == 'fac-3%s' % language_code:
-            verses = searchForVerseContent(search['fac3'], raw_html)
-            verses = fixFacsimileImgUrl(verses, fac_3_img_url)
+        elif fileName == file_names['fac_3']:
+            verses = searchForVerseContent(search['fac_3'], raw_html)
+            verses = fixFacsimileImgUrl(verses, img_urls['fac_3'])
             verses = re.sub('<tr>', '<tr><br />', verses)
             verses = re.sub('</table>', '<br /></table>', verses)
 
             processSpecialCaseChapter(patterns['fac_3_keep'], patterns['fac_3_remove'], verses, path, fileName)
             return
 
-        elif path.endswith('js-h') and fileName == '1%s' % language_code:
-            verses = searchForVerseContent(search['jsh'], raw_html)
+        elif path.endswith(file_paths['js_h']) and fileName == file_names['js_h']:
+            verses = searchForVerseContent(search['js_h'], raw_html)
 
             for pattern in patterns['jsh_pre_clean']:
                 verses = re.sub(pattern, '', verses)
@@ -578,7 +625,7 @@ def getVerses(path, fileName):
             writeToCsv(path, fileName, verse_texts)
             return
 
-        elif path.endswith('ps') and fileName == '119%s' % language_code:
+        elif path.endswith(file_paths['ps']) and fileName == file_names['ps_119']:
             verses = searchForVerseContent(search['ps119'], raw_html)
 
             for pattern in patterns['ps_119_pre_clean']:
@@ -669,7 +716,7 @@ if run_mode == '1':
     print('\nWhat is the filename to convert to CSV: ')
     filename = input()
     try:
-        getVerses(path_to_dir, filename)
+        extractContents(path_to_dir, filename)
     except:
         print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path_to_dir, filename))
 
@@ -677,7 +724,7 @@ elif run_mode == '2':
     for name in os.listdir(path_to_dir):
         if name.endswith(language_code):
             try:
-                getVerses(path_to_dir, name)
+                extractContents(path_to_dir, name)
             except:
                 print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path_to_dir, name))
 
@@ -686,7 +733,7 @@ elif run_mode == '3':
         for file in files:
             if file.endswith(language_code):
                 # try:
-                getVerses(subdir, file)
+                extractContents(subdir, file)
                     # print('%s/%s DONE' % (subdir, file), file=sys.stderr)
                 # except:
                 #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
