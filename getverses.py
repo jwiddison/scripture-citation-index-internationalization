@@ -2,7 +2,7 @@
 
 # !/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 
-import re     # Pythons REGEX library
+import re     # Python's REGEX library
 import os     # Gives us access to file system to search for other files
 import csv    # Enables us to write results out to CSV files
 import sys    # To redirect errors to STDERR, and be able to access command-line args
@@ -55,7 +55,7 @@ tags_to_keep = [
     '<div eid="16" words="3" class="office">',
     '<div eid="13" words="2" class="signature">',
     '<div eid="19" words="9" class="date">',
-    # For Facsimilies
+    # For facsimiles
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-3.jpg" alt="Facsímile Nº 3" width="408" height="402">',
@@ -70,6 +70,9 @@ tags_to_keep = [
     '</span>',
     '</div>',
 ]
+
+# Because we left <h2></h2> in the facsimiles and added <br /> and nowhere else.  Need this for additional checks so we don't throw an error
+tags_to_keep_if_facsimile = ['<h2>', '</h2>', '<br />']
 
 # Dictionary that holds all the lists of REGEX patterns used to clean the various chapters
 patterns = {
@@ -327,6 +330,7 @@ patterns = {
 search = {
     # 'general' handles all chapters except the special cases that follow
     'general': '<div\s+class="verses"\s+id="[^"]*">(.+?)</div>',
+    # Special Case Chapters
     'bofm_title': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
     'bofm_intro': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
     'three': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
@@ -339,6 +343,8 @@ search = {
     'fac3': '<div\s+id="primary">(.*?)</ul>[^>]*?</div>',
     'jsh': '<div[^>]*?class="verses"[^>]*?id="0">(.*?)</div>[^>]*?<ul class="prev-next[^>]*?large">',
     'ps119': '<div\s+class="verses"\s+id="[^"]*">(.*?)</div>[^<]*?</div>',
+    # Matches all remaining html tags.  For use in check after cleaning
+    'remaining': '<[^>]*?>',
 }
 
 
@@ -346,53 +352,54 @@ search = {
 # -----------------------------------------------------  HELPERS  ------------------------------------------------------ #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
-
+# Given a verse as a string, and 2 lists of regex patterns, strips unwanted html tags out of verse, and returns cleaned string
 def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
+    # Removes HTML tags, but keeps their contents
     for pattern in patterns_keep:
         capture_group = re.search(pattern, string_to_clean)
 
         if capture_group:
             string_to_clean = re.sub(pattern, capture_group.group(1), string_to_clean)
 
+    # Removes HTML tags and their contents
     for pattern in patterns_remove:
         string_to_clean = re.sub(pattern, '', string_to_clean)
 
     # Remove all leading whitespace
     string_to_clean = re.sub('^\s\s+', '', string_to_clean)
+
     # Replace multiple spaces with one, and remove trailing whitespace
     string_to_clean = re.sub('\s+', ' ', string_to_clean).strip()
 
     return string_to_clean
 
 
-def checkForRemainingTagsForSpecialCase(verses_block, path, fileName):
-    all_other_tags = re.findall('<[^>]*?>', verses_block)
-
-    # Because we left <h2></h2> in the facsimiles and added <br /> and nowhere else, append <h2>, </h2>, <br /> so it doesn't throw an error
-    tags_to_keep_if_facsimilie = ['<h2>', '</h2>', '<br />']
-
-    for tag in all_other_tags:
-        if tag not in tags_to_keep:
-            if tag in tags_to_keep_if_facsimilie:
-                if fileName.startswith('fac'):
-                    pass
-            else:
-                print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s' % (path, fileName, tag), file=sys.stderr)
-
-
+# Checks for any html tags not already accounted for in tags_to_keep list
 def checkForRemainingTags(verse_to_check, index, path, fileName):
-    all_other_tags = re.findall('<[^>]*?>', verse_to_check)
+    all_other_tags = re.findall(search['remaining'], verse_to_check)
 
     for tag in all_other_tags:
         if tag not in tags_to_keep:
-            # Have to include a special check because JS-H also includes <br /> in the paragraphs at the end
-            if path.endswith('js-h') and fileName == '1%s' % language_code:
-                if tag == '<br />':
-                    pass
-            else:
-                print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1), file=sys.stderr)
+
+            # Include a special check because JS-H also includes <br /> in the paragraphs at the end
+            if not path.endswith('js-h') and fileName == '1%s' % language_code:
+                if tag != '<br />':
+                    print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s in verse %i' % (path, fileName, tag, index + 1), file=sys.stderr)
 
 
+# Checks for any remaining tags in special case chapters
+def checkForRemainingTagsForSpecialCase(verses_block, path, fileName):
+    all_other_tags = re.findall(search['remaining'], verses_block)
+
+    for tag in all_other_tags:
+        if tag not in tags_to_keep:
+            # Check if tag matches 3 additional tags found in facsimiles
+            if tag not in tags_to_keep_if_facsimile:
+                if not fileName.startswith('fac'):
+                    print('>>>>>>>>>>>>>>>>>>> %s/%s also contains %s' % (path, fileName, tag), file=sys.stderr)
+
+
+# Writes verses out to a csv file with the same name as the input file.  Separated into rows by verse
 def writeToCsv(path, fileName, verse_texts):
     with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
@@ -401,12 +408,14 @@ def writeToCsv(path, fileName, verse_texts):
             writer.writerow({'Verse': index + 1, 'Text': verse})
 
 
+# Writes special cases out to CSV in one big 'verse' block
 def writeToCsvSpecialCase(path, fileName, verses):
     with open('%s/%s.csv' % (path, fileName), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=['Verse', 'Text'])
         writer.writerow({'Verse': 1, 'Text': verses})
 
 
+# Helper method to find and extract content for all chapters but special cases
 def processStandardChapter(verses, path, fileName):
     verse_number_locations = [] # Holds the index of the verse numbers
     verse_text_start_locations = [] #Holds the substring index where verses start
