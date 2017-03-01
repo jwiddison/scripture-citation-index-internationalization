@@ -76,6 +76,9 @@ tags_to_keep = [
     '</div>',
     # Added to preserve tables in special cases
     '<br />',
+
+    # TODO: Remove this
+    '<span class="line">',
 ]
 
 
@@ -97,17 +100,19 @@ patterns = {
         '<span[^>]*?class="language[^>]*?>(.*?)</span>',
         '<span[^>]*?class="clarityWord">(.*?)</span>',
         '<span[^>]*?class="selah">(.*?)</span>',
-        '<span[^>]*?class="line">(.*?)</span>',
         '<p[^>]*?class=""[^>]*?>(.*?)</p>',
         '<span[^>]*?class="">(.*?)</span>', # Added for Portugese
         '<span[^>]*?class="small">(.*?)</span>', # Added for Italian
         '<span>(.*?)</span>', # Added for Italian
+
+        # TODO: This is super broken for some reason.  Need to fix <span class="line">
+        # '<span\s+class="line">(.*?)</span>',
     ],
 
     # Patterns to delete where we don't want to keep their contents
     'general_remove': [
+        '<span\s+class="verse">(.*?)</span>',
         '<sup[^>]*?class="studyNoteMarker">(.*?)</sup>',
-        '<span[^>]*?class="verse">[0-9]</span>',
         '<div[^>]*?class="summary">(.*?)</div',
         '<h2>(.*?)</h2>',
         '<p>(.*?)</p>',
@@ -309,7 +314,7 @@ patterns = {
     ],
 
     'jsh_remove': [
-        # Empty for Spanish.  Leaving in case its needed for other languages
+        '<span\s+class="verse">(.*?)</span>',
     ],
 
     # The special-case tags for Psalm 119
@@ -396,6 +401,8 @@ file_names = {
 
 # Given a verse as a string, and 2 lists of regex patterns, strips unwanted html tags out of verse, and returns cleaned string
 def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
+    string_to_clean = re.sub('<span[^>]*?class="line">', ' <span class="line">', string_to_clean)
+
     # Removes HTML tags, but keeps their contents
     for pattern in patterns_keep:
         capture_group = re.search(pattern, string_to_clean)
@@ -412,9 +419,6 @@ def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
 
     # Replace multiple spaces with one, and remove trailing whitespace
     string_to_clean = re.sub('\s+', ' ', string_to_clean).strip()
-
-    # Fix all multiple <span class="line"> instances by adding a space between them.
-    # string_to_clean = re.sub('</span><span[^>]*?class="line">', '</span> <span class="line">', string_to_clean)
 
     return string_to_clean
 
@@ -457,43 +461,57 @@ def writeToCsvSpecialCase(path, fileName, verses):
         writer.writerow({'Verse': 1, 'Text': verses})
 
 
-# Helper method to find and extract content for all chapters but special cases
-def processStandardChapter(verses, path, fileName):
+# Helper method to break raw_html into separate verses to be cleaned
+def getVersesHTML(verses):
     verse_number_locations = [] # Holds the index of the verse numbers
-    verse_text_start_locations = [] #Holds the substring index where verses start
+    verse_text_start_locations = [] # Holds the substring index where verses start
     verse_text_end_locations = [] # Holds the substring index where verses end
     verse_html = [] # Holds raw Html for split verses
-    verse_texts = [] # Holds finished cleaned text for verses
 
     # Get sub-string index for each verse number
     for index in re.finditer('<span class="verse">', verses):
         verse_number_locations.append(index.end() + 1)
 
     # Get index for the beginning of each verse
-    for index in re.finditer('</p>', verses):
-        verse_text_end_locations.append(index.start())
+    for index in re.finditer('<span class="verse">', verses):
+        verse_text_start_locations.append(index.start())
 
     # Get index for the end of each verse
-    for index in range(len(verse_number_locations)):
-        location = verses.find('</span>', verse_number_locations[index])
-        verse_text_start_locations.append(location + len('</span>'))
+    for index in re.finditer('</p>', verses):
+        verse_text_end_locations.append(index.start())
 
     # Get raw HTML for verses using string slicing
     for index in range(len(verse_number_locations)):
         verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
 
-    # Clean verse, check for other tags, and write cleaned text into verse_texts list
+    return verse_html
+
+
+# Just a helper method to factor this function out of the main flow of things
+def getVerseTextsFromHTML(verse_html, path, fileName):
+    verse_texts = []
+
     for index, verse in enumerate(verse_html):
         verse = cleanVerse(patterns['general_keep'], patterns['general_remove'], verse)
         checkForRemainingTags(verse, index, path, fileName)
         verse_texts.append(verse)
 
+    return verse_texts
+
+
+# Helper method to find and extract content for all chapters but special cases
+def processStandardChapter(verses, path, fileName):
+    verse_html = [] # Holds raw Html for split verses
+    verse_texts = [] # Holds finished cleaned text for verses
+
+    verse_html = getVersesHTML(verses)
+    verse_texts = getVerseTextsFromHTML(verse_html, path, fileName)
+
     writeToCsv(path, fileName, verse_texts)
     return
 
 
-# Similar to above method to process chapter, but smaller for special cases because they
-#     don't need to be broken into verses
+# Similar to above method to process chapter, but smaller for special cases because they don't need to be broken into verses
 def processSpecialCaseChapter(keep_list, remove_list, verses, path, fileName):
     verses = cleanVerse(keep_list, remove_list, verses)
     checkForRemainingTagsForSpecialCase(verses, path, fileName)
@@ -514,9 +532,6 @@ def searchForVerseContent(pattern, raw_html):
 def extractContents(path, fileName):
 
     # Reset Lists to empty each time
-    verse_number_locations = []
-    verse_text_start_locations = []
-    verse_text_end_locations = []
     verse_html = []
     verse_texts = []
 
@@ -607,18 +622,7 @@ def extractContents(path, fileName):
             for pattern in patterns['jsh_pre_clean']:
                 verses = re.sub(pattern, '', verses)
 
-            for index in re.finditer('<span class="verse">', verses):
-                verse_number_locations.append(index.end() + 1)
-
-            for index in re.finditer('</p>', verses):
-                verse_text_end_locations.append(index.start())
-
-            for index in range(len(verse_number_locations)):
-                location = verses.find('</span>', verse_number_locations[index])
-                verse_text_start_locations.append(location + len('</span>'))
-
-            for index in range(len(verse_number_locations)):
-                verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
+            verse_html = getVersesHTML(verses)
 
             # Add the paragraphs that come after the end of the last verse.
             verse_html.append(re.search('<ol\s+class="symbol"><li>(.*?)</li></ol>', verses).group(1))
@@ -643,17 +647,7 @@ def extractContents(path, fileName):
             for pattern in patterns['ps_119_pre_clean']:
                 verses = re.sub(pattern, '', verses)
 
-            for index in re.finditer('<span class="verse">', verses):
-                verse_number_locations.append(index.end() + 1)
-
-            for index in re.finditer('</p>', verses):
-                verse_text_end_locations.append(index.end())
-
-            for index in re.finditer('<span class="verse">', verses):
-                verse_text_start_locations.append(index.start())
-
-            for index in range(len(verse_number_locations)):
-                verse_html.append(verses[verse_text_start_locations[index]:verse_text_end_locations[index]])
+            verse_html = getVersesHTML(verses)
 
             for index, verse in enumerate(verse_html):
                 verse = cleanVerse(patterns['ps_119_keep'], patterns['ps_119_remove'], verse)
@@ -741,8 +735,8 @@ elif run_mode == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for file in files:
             if file.endswith(language_code):
-                try:
-                    extractContents(subdir, file)
-                    print('%s/%s DONE' % (subdir, file), file=sys.stderr)
-                except:
-                    print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
+                # try:
+                extractContents(subdir, file)
+                #     print('%s/%s DONE' % (subdir, file), file=sys.stderr)
+                # except:
+                #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
