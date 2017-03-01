@@ -33,7 +33,7 @@ toc_files_to_skip = [
 ]
 
 
-# All the html tags that we expect to be left over after cleaning
+# All the html tags that we expect to be left over after cleaning, which will be ignored by the checks
 tags_to_keep = [
     # Signatures for 3 Witnesses
     '<div eid="2" words="2" class="signature">',
@@ -89,7 +89,7 @@ tags_to_keep_if_facsimile = [
 # Dictionary that holds all the lists of REGEX patterns used to clean the various chapters
 patterns = {
     # These are all the patterns we want remove without removing their contents.
-    'standard_keep': [
+    'general_keep': [
         '<div[^>]*?class="closing">(.*?)</div>',
         '<div[^>]*?class="topic">(.*?)</div>',
         '<page-break[^>]*?>(.*?)</page-break>',
@@ -105,7 +105,7 @@ patterns = {
     ],
 
     # Patterns to delete where we don't want to keep their contents
-    'standard_remove': [
+    'general_remove': [
         '<sup[^>]*?class="studyNoteMarker">(.*?)</sup>',
         '<span[^>]*?class="verse">[0-9]</span>',
         '<div[^>]*?class="summary">(.*?)</div',
@@ -413,6 +413,9 @@ def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
     # Replace multiple spaces with one, and remove trailing whitespace
     string_to_clean = re.sub('\s+', ' ', string_to_clean).strip()
 
+    # Fix all multiple <span class="line"> instances by adding a space between them.
+    # string_to_clean = re.sub('</span><span[^>]*?class="line">', '</span> <span class="line">', string_to_clean)
+
     return string_to_clean
 
 
@@ -481,7 +484,7 @@ def processStandardChapter(verses, path, fileName):
 
     # Clean verse, check for other tags, and write cleaned text into verse_texts list
     for index, verse in enumerate(verse_html):
-        verse = cleanVerse(patterns['standard_keep'], patterns['standard_remove'], verse)
+        verse = cleanVerse(patterns['general_keep'], patterns['general_remove'], verse)
         checkForRemainingTags(verse, index, path, fileName)
         verse_texts.append(verse)
 
@@ -569,6 +572,7 @@ def extractContents(path, fileName):
         elif fileName == file_names['fac_1']:
             verses = searchForVerseContent(search['fac_1'], raw_html)
 
+            # Fix Image URL and preserve tables with <br />
             verses = fixFacsimileImgUrl(verses, img_urls['fac_1'])
             verses = re.sub('<tr>', '<tr><br />', verses)
 
@@ -578,6 +582,7 @@ def extractContents(path, fileName):
         elif fileName == file_names['fac_2']:
             verses = searchForVerseContent(search['fac_2'], raw_html)
 
+            # Fix Image URL and preserve tables with <br />
             verses = fixFacsimileImgUrl(verses, img_urls['fac_2'])
             verses = re.sub('<tr>', '<tr><br />', verses)
             verses = re.sub('</table>', '<br /></table>', verses)
@@ -588,6 +593,7 @@ def extractContents(path, fileName):
         elif fileName == file_names['fac_3']:
             verses = searchForVerseContent(search['fac_3'], raw_html)
 
+            # Fix Image URL and preserve tables with <br />
             verses = fixFacsimileImgUrl(verses, img_urls['fac_3'])
             verses = re.sub('<tr>', '<tr><br />', verses)
             verses = re.sub('</table>', '<br /></table>', verses)
@@ -636,9 +642,6 @@ def extractContents(path, fileName):
 
             for pattern in patterns['ps_119_pre_clean']:
                 verses = re.sub(pattern, '', verses)
-
-            # Fix all multiple <span class="line"> instances by adding a space between them.
-            verses = re.sub('</span><span[^>]*?class="line">', '</span> <span class="line">', verses)
 
             for index in re.finditer('<span class="verse">', verses):
                 verse_number_locations.append(index.end() + 1)
@@ -738,8 +741,8 @@ elif run_mode == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for file in files:
             if file.endswith(language_code):
-                # try:
-                extractContents(subdir, file)
-                    # print('%s/%s DONE' % (subdir, file), file=sys.stderr)
-                # except:
-                #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
+                try:
+                    extractContents(subdir, file)
+                    print('%s/%s DONE' % (subdir, file), file=sys.stderr)
+                except:
+                    print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
