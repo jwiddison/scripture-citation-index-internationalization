@@ -51,15 +51,14 @@ tags_to_keep = [
     '<div eid="1" words="3" class="salutation">',
     '<div eid="7" words="2" class="signature">',
     '<div eid="8" words="13" class="office">',
-    '<div eid="7" words="2" class="signature">',
     '<div eid="11" words="10" class="date">',
     # For OD 2
     '<div eid="7" words="2" class="salutation">',
+    '<div class="addressee">',
     '<div eid="13" words="2" class="signature">',
     '<div eid="14" words="3" class="signature">',
     '<div eid="15" words="2" class="signature">',
     '<div eid="16" words="3" class="office">',
-    '<div eid="13" words="2" class="signature">',
     '<div eid="19" words="9" class="date">',
     # For facsimiles
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">',
@@ -214,13 +213,9 @@ patterns = {
 
     # The special-case tags for Official Declaration 2
     'od_2_keep': [
-        '<h2>(.*?)</h2>',
-        '<div[^>]*?class="studyIntro">(.*?)</div>',
-        '<div[^>]*?class="addressee">(.*?)</div>',
-        '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
         '<div[^>]*?class="closing">(.*?)</div>',
+        '<div\s+eid="1"\s+words="3"\s+class="salutation">(.*?)</div>',
         '<div[^>]*?class="openingBlock">(.*?)</div>',
-
     ],
 
     'od_2_remove': [
@@ -228,11 +223,11 @@ patterns = {
         '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
         '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
         '</a>',
+        '<div[^>]*?class="studyIntro">(.*?)</div>',
         '<p>',
         '</p>',
-        '<li[^>]*?class="prev">(.*?)</li>',
-        '<li[^>]*?class="next">(.*?)</li>',
-        '<ul[^>]*?>',
+        '<div[^>]*?class="article"[^>]*?id="[^>]*?">',
+        '<h2>(.*?)</h2>',
     ],
 
     # The special-case tags for Facsimile No 1
@@ -354,7 +349,7 @@ search = {
     'eight': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
     'dc_intro': '<div\s+id="primary">(.*?)</p>[^<]*?</div>[^<]*?<ul\s+class="prev-next\s+large">',
     'od1': '<div\s+id="primary">(.*?)</p>[^<]*?</div>',
-    'od2': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
+    'od2': '<div\s+id="primary">(.*?)</div>[^<]*?<ul\s+class="prev-next\s+large">',
     'fac_1': '<div\s+id="primary">(.*?)</div>',
     'fac_2': '<div\s+id="primary">(.*?)</ul>[^<]*?</div>',
     'fac_3': '<div\s+id="primary">(.*?)</ul>[^>]*?</div>',
