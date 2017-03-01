@@ -194,21 +194,22 @@ patterns = {
 
     # The special-case tags for Official Declaration 1
     'od_1_keep': [
+        '<div\s+eid="1"\s+words="3"\s+class="salutation">(.*?)</div>',
+        '<div[^>]*?class="openingBlock">(.*?)</div>',
         '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
-        '<div[^>]*?class="studyIntro">(.*?)</div>',
-        # '<div[^>]*?class="article"[^>]*?id="[^>]*?">(.*?)</div>',
-        # '<div[^>]*?class="openingBlock">(.*?)</div>',
         '<h2>(.*?)</h2>',
     ],
 
     'od_1_remove': [
+        '<div[^>]*?id="media">(.*?)</div>',
         '<a[^>]*?name="p[0-9]*?"[^>]*?class="bookmark[^>]*?dontHighlight">(.*?)</a>',
         '<a[^>]*?href="[^>]*?"[^>]*?class="scriptureRef">',
         '</a>',
-        # '<div[^>]*?class="topic">',
-        '<div[^>]*?id="media">(.*?)</div>',
         '<p>',
         '</p>',
+        '<div[^>]*?class="studyIntro">(.*?)</div>',
+        '<div[^>]*?class="article"[^>]*?id="[^>]*?">',
+        '<div[^>]*?class="topic">',
     ],
 
     # The special-case tags for Official Declaration 2
