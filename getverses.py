@@ -398,19 +398,27 @@ file_names = {
 
 beg_offset = len('<span class="line">')
 end_offset = len('</span>')
+break_tag = '<br />'
 
 def removeSpanClassLine(string_to_clean):
     str = ''
-    for location in re.finditer('<span\s+class="line">.*?</span>', string_to_clean):
-        str += string_to_clean[beg_offset + location.start() : location.end() - end_offset]
+    matches = re.finditer('<span\s+class="line">.*?</span>', string_to_clean)
 
+    # Calling matches (because its a special REGEX iterable object) actually consumes it, so it can only be used once.
+    # So, I set it to a list here to be able to use it for multiple things
+    matches = list(matches)
+
+    for index, location in enumerate(matches):
+        str += string_to_clean[beg_offset + location.start() : location.end() - end_offset]
+        # Add 1 to account for 0-indexed index
+        if index + 1 < len(matches):
+            str += break_tag
     return str
+
 
 # Given a verse as a string, and 2 lists of regex patterns, strips unwanted html tags out of verse, and returns cleaned string
 def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
     string_to_clean = re.sub('<span[^>]*?class="line">', ' <span class="line">', string_to_clean)
-
-
 
     # Removes HTML tags, but keeps their contents
     for pattern in patterns_keep:
@@ -423,16 +431,10 @@ def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
     for pattern in patterns_remove:
         string_to_clean = re.sub(pattern, '', string_to_clean)
 
+    # Fix verses that contain multiple <span class="line">
     span_class_line = re.search('<span\s+class="line">.*?</span>', string_to_clean)
     if span_class_line:
         string_to_clean = removeSpanClassLine(string_to_clean)
-
-    # foo = re.sub('<span\s+class="line">', '<br />', string_to_clean)
-    # print('>>>>>>>>> ' + foo)
-
-    # string_to_clean = re.sub('<span\s+class="verse">(.*?)</span>', '', string_to_clean)
-
-
 
     # Remove all leading whitespace
     string_to_clean = re.sub('^\s\s+', '', string_to_clean)
