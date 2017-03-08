@@ -15,6 +15,8 @@ import sys    # To redirect errors to STDERR, and be able to access command-line
 # Language code.  Change last 3 letters to run for a new language
 language_code = '?lang=spa'
 
+# This was used in so many places, I thought I'd bring it out into global scope
+break_tag = '<br />'
 
 # Dictionary of URLs for the 3 images for the facimilies.  Will need to change alt tag for new languages
 img_urls = {
@@ -335,8 +337,6 @@ patterns = {
     'ps_119_remove': [
         '</p>',
         '<span[^>]*?class="verse">[0-9]+[^<]*?</span>',
-        '<span[^>]*?class="line">',
-        '</span>',
     ],
 }
 
@@ -396,16 +396,15 @@ file_names = {
 # -----------------------------------------------------  HELPERS  ------------------------------------------------------ #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
-beg_offset = len('<span class="line">')
-end_offset = len('</span>')
-break_tag = '<br />'
-
+# Fixes chapters that contain multiple instances of <span class="line"> in the same verse
 def removeSpanClassLine(string_to_clean):
     str = ''
+    beg_offset = len('<span class="line">')
+    end_offset = len('</span>')
     matches = re.finditer('<span\s+class="line">.*?</span>', string_to_clean)
 
     # Calling matches (because its a special REGEX iterable object) actually consumes it, so it can only be used once.
-    # So, I set it to a list here to be able to use it for multiple things
+    # So, I set it to a list here to be able to use it multiple times
     matches = list(matches)
 
     for index, location in enumerate(matches):
@@ -418,8 +417,6 @@ def removeSpanClassLine(string_to_clean):
 
 # Given a verse as a string, and 2 lists of regex patterns, strips unwanted html tags out of verse, and returns cleaned string
 def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
-    string_to_clean = re.sub('<span[^>]*?class="line">', ' <span class="line">', string_to_clean)
-
     # Removes HTML tags, but keeps their contents
     for pattern in patterns_keep:
         capture_group = re.search(pattern, string_to_clean)
@@ -432,8 +429,7 @@ def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
         string_to_clean = re.sub(pattern, '', string_to_clean)
 
     # Fix verses that contain multiple <span class="line">
-    span_class_line = re.search('<span\s+class="line">.*?</span>', string_to_clean)
-    if span_class_line:
+    if re.search('<span\s+class="line">.*?</span>', string_to_clean):
         string_to_clean = removeSpanClassLine(string_to_clean)
 
     # Remove all leading whitespace
@@ -589,9 +585,9 @@ def extractContents(path, fileName):
             verses = searchForVerseContent(search['dc_intro'], raw_html)
 
             # Preserve table in list of names
-            verses = re.sub('<ul\s+class="noMarker">', '<br />', verses)
-            verses = re.sub('<li>', '<br />', verses)
-            verses = re.sub('</ul>', '<br />', verses)
+            verses = re.sub('<ul\s+class="noMarker">', break_tag, verses)
+            verses = re.sub('<li>', break_tag, verses)
+            verses = re.sub('</ul>', break_tag, verses)
 
             processSpecialCaseChapter(patterns['dc_intro_keep'], patterns['dc_intro_remove'], verses, path, fileName)
             return
@@ -748,17 +744,17 @@ if run_mode == '1':
 elif run_mode == '2':
     for name in os.listdir(path_to_dir):
         if name.endswith(language_code):
-            # try:
-            extractContents(path_to_dir, name)
-            # except:
-            #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path_to_dir, name))
+            try:
+                extractContents(path_to_dir, name)
+            except:
+                print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path_to_dir, name))
 
 elif run_mode == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for file in files:
             if file.endswith(language_code):
-                try:
-                    extractContents(subdir, file)
-                    print('%s/%s DONE' % (subdir, file), file=sys.stderr)
-                except:
-                    print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
+                # try:
+                extractContents(subdir, file)
+                #     print('%s/%s DONE' % (subdir, file), file=sys.stderr)
+                # except:
+                #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
