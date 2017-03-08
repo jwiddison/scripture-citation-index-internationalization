@@ -76,9 +76,6 @@ tags_to_keep = [
     '</div>',
     # Added to preserve tables in special cases
     '<br />',
-
-    # TODO: Remove this
-    '<span class="line">',
 ]
 
 
@@ -101,12 +98,13 @@ patterns = {
         '<span[^>]*?class="clarityWord">(.*?)</span>',
         '<span[^>]*?class="selah">(.*?)</span>',
         '<p[^>]*?class=""[^>]*?>(.*?)</p>',
+
+        # '<span\s+class="line">(.*?)</span>',
+
         '<span[^>]*?class="">(.*?)</span>', # Added for Portugese
         '<span[^>]*?class="small">(.*?)</span>', # Added for Italian
         '<span>(.*?)</span>', # Added for Italian
 
-        # TODO: This is super broken for some reason.  Need to fix <span class="line">
-        # '<span\s+class="line">(.*?)</span>',
     ],
 
     # Patterns to delete where we don't want to keep their contents
@@ -398,10 +396,21 @@ file_names = {
 # -----------------------------------------------------  HELPERS  ------------------------------------------------------ #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
+beg_offset = len('<span class="line">')
+end_offset = len('</span>')
+
+def removeSpanClassLine(string_to_clean):
+    str = ''
+    for location in re.finditer('<span\s+class="line">.*?</span>', string_to_clean):
+        str += string_to_clean[beg_offset + location.start() : location.end() - end_offset]
+
+    return str
 
 # Given a verse as a string, and 2 lists of regex patterns, strips unwanted html tags out of verse, and returns cleaned string
 def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
     string_to_clean = re.sub('<span[^>]*?class="line">', ' <span class="line">', string_to_clean)
+
+
 
     # Removes HTML tags, but keeps their contents
     for pattern in patterns_keep:
@@ -413,6 +422,17 @@ def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
     # Removes HTML tags and their contents
     for pattern in patterns_remove:
         string_to_clean = re.sub(pattern, '', string_to_clean)
+
+    span_class_line = re.search('<span\s+class="line">.*?</span>', string_to_clean)
+    if span_class_line:
+        string_to_clean = removeSpanClassLine(string_to_clean)
+
+    # foo = re.sub('<span\s+class="line">', '<br />', string_to_clean)
+    # print('>>>>>>>>> ' + foo)
+
+    # string_to_clean = re.sub('<span\s+class="verse">(.*?)</span>', '', string_to_clean)
+
+
 
     # Remove all leading whitespace
     string_to_clean = re.sub('^\s\s+', '', string_to_clean)
@@ -726,17 +746,17 @@ if run_mode == '1':
 elif run_mode == '2':
     for name in os.listdir(path_to_dir):
         if name.endswith(language_code):
-            try:
-                extractContents(path_to_dir, name)
-            except:
-                print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path_to_dir, name))
+            # try:
+            extractContents(path_to_dir, name)
+            # except:
+            #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path_to_dir, name))
 
 elif run_mode == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for file in files:
             if file.endswith(language_code):
-                # try:
-                extractContents(subdir, file)
-                #     print('%s/%s DONE' % (subdir, file), file=sys.stderr)
-                # except:
-                #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
+                try:
+                    extractContents(subdir, file)
+                    print('%s/%s DONE' % (subdir, file), file=sys.stderr)
+                except:
+                    print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
