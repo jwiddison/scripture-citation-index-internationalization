@@ -100,9 +100,6 @@ patterns = {
         '<span[^>]*?class="clarityWord">(.*?)</span>',
         '<span[^>]*?class="selah">(.*?)</span>',
         '<p[^>]*?class=""[^>]*?>(.*?)</p>',
-
-        # '<span\s+class="line">(.*?)</span>',
-
         '<span[^>]*?class="">(.*?)</span>', # Added for Portugese
         '<span[^>]*?class="small">(.*?)</span>', # Added for Italian
         '<span>(.*?)</span>', # Added for Italian
@@ -396,6 +393,7 @@ file_names = {
 # -----------------------------------------------------  HELPERS  ------------------------------------------------------ #
 # ---------------------------------------------------------------------------------------------------------------------- #
 
+
 # Fixes chapters that contain multiple instances of <span class="line"> in the same verse
 def removeSpanClassLine(string_to_clean):
     str = ''
@@ -432,11 +430,14 @@ def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
     if re.search('<span\s+class="line">.*?</span>', string_to_clean):
         string_to_clean = removeSpanClassLine(string_to_clean)
 
-    # Remove all leading whitespace
-    string_to_clean = re.sub('^\s\s+', '', string_to_clean)
+    # Clean leftover single spaces left between leftover html tags
+    string_to_clean = re.sub('>\s+<', '><', string_to_clean)
 
-    # Replace multiple spaces with one, and remove trailing whitespace
-    string_to_clean = re.sub('\s+', ' ', string_to_clean).strip()
+    # Remove all leading and trailing whitespace
+    string_to_clean = re.sub('^\s+', '', string_to_clean).strip()
+
+    # Replace multiple spaces with one
+    string_to_clean = re.sub('\s+', ' ', string_to_clean)
 
     return string_to_clean
 
@@ -649,7 +650,7 @@ def extractContents(path, fileName):
                 verse = cleanVerse(patterns['jsh_keep'], patterns['jsh_remove'], verse)
 
                 # Handle the paragraphs that occur after the last verse
-                verse = re.sub('</p><p>', '<br /><br />', verse)
+                verse = re.sub('</p><p>\s', '<br /><br />', verse)
                 verse = re.sub('<p>', '', verse)
                 verse = re.sub('</p>', '', verse)
 
