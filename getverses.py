@@ -443,7 +443,7 @@ def cleanVerse(patterns_keep, patterns_remove, string_to_clean):
 
 
 # Checks for any html tags not already accounted for in tags_to_keep list
-def checkForRemainingTags(verse_to_check, index, path, fileName):
+def checkRemainingTags(verse_to_check, index, path, fileName):
     all_other_tags = re.findall(search['remaining'], verse_to_check)
 
     for tag in all_other_tags:
@@ -452,7 +452,7 @@ def checkForRemainingTags(verse_to_check, index, path, fileName):
 
 
 # Checks for any remaining tags in special case chapters
-def checkForRemainingTagsForSpecialCase(verses_block, path, fileName):
+def checkRemainingTagsSpecialCase(verses_block, path, fileName):
     all_other_tags = re.findall(search['remaining'], verses_block)
 
     for tag in all_other_tags:
@@ -512,7 +512,7 @@ def getVerseTextsFromHTML(verse_html, path, fileName):
 
     for index, verse in enumerate(verse_html):
         verse = cleanVerse(patterns['general_keep'], patterns['general_remove'], verse)
-        checkForRemainingTags(verse, index, path, fileName)
+        checkRemainingTags(verse, index, path, fileName)
         verse_texts.append(verse)
 
     return verse_texts
@@ -533,7 +533,7 @@ def processStandardChapter(verses, path, fileName):
 # Similar to above method to process chapter, but smaller for special cases because they don't need to be broken into verses
 def processSpecialCaseChapter(keep_list, remove_list, verses, path, fileName):
     verses = cleanVerse(keep_list, remove_list, verses)
-    checkForRemainingTagsForSpecialCase(verses, path, fileName)
+    checkRemainingTagsSpecialCase(verses, path, fileName)
     writeToCsvSpecialCase(path, fileName, verses)
 
 
@@ -543,7 +543,7 @@ def fixFacsimileImgUrl(verses, new_url):
 
 
 # Simple helper that will get the verses block from raw html given the pattern to find it
-def searchForVerseContent(pattern, raw_html):
+def searchVerseContent(pattern, raw_html):
     return re.search(pattern, raw_html).group(1)
 
 
@@ -563,27 +563,27 @@ def extractContents(path, fileName):
 
         # Handle Special Cases
         if fileName == file_names['bofm_title']:
-            verses = searchForVerseContent(search['bofm_title'], raw_html)
+            verses = searchVerseContent(search['bofm_title'], raw_html)
             processSpecialCaseChapter(patterns['bofm_title_keep'], patterns['bofm_title_remove'], verses, path, fileName)
             return
 
         elif path.endswith(file_paths['bofm']) and fileName == file_names['bofm_intro']:
-            verses = searchForVerseContent(search['bofm_intro'], raw_html)
+            verses = searchVerseContent(search['bofm_intro'], raw_html)
             processSpecialCaseChapter(patterns['bofm_intro_keep'], patterns['bofm_intro_remove'], verses, path, fileName)
             return
 
         elif fileName == file_names['three']:
-            verses = searchForVerseContent(search['three'], raw_html)
+            verses = searchVerseContent(search['three'], raw_html)
             processSpecialCaseChapter(patterns['witnesses_keep'], patterns['witnesses_remove'], verses, path, fileName)
             return
 
         elif fileName == file_names['eight']:
-            verses = searchForVerseContent(search['eight'], raw_html)
+            verses = searchVerseContent(search['eight'], raw_html)
             processSpecialCaseChapter(patterns['witnesses_keep'], patterns['witnesses_remove'], verses, path, fileName)
             return
 
         elif path.endswith(file_paths['dc']) and fileName == file_names['dc_intro']:
-            verses = searchForVerseContent(search['dc_intro'], raw_html)
+            verses = searchVerseContent(search['dc_intro'], raw_html)
 
             # Preserve table in list of names
             verses = re.sub('<ul\s+class="noMarker">', break_tag, verses)
@@ -594,17 +594,17 @@ def extractContents(path, fileName):
             return
 
         elif path.endswith(file_paths['od']) and fileName == file_names['od_1']:
-            verses = searchForVerseContent(search['od1'], raw_html)
+            verses = searchVerseContent(search['od1'], raw_html)
             processSpecialCaseChapter(patterns['od_1_keep'], patterns['od_1_remove'], verses, path, fileName)
             return
 
         elif path.endswith(file_paths['od']) and fileName == file_names['od_2']:
-            verses = searchForVerseContent(search['od2'], raw_html)
+            verses = searchVerseContent(search['od2'], raw_html)
             processSpecialCaseChapter(patterns['od_2_keep'], patterns['od_2_remove'], verses, path, fileName)
             return
 
         elif fileName == file_names['fac_1']:
-            verses = searchForVerseContent(search['fac_1'], raw_html)
+            verses = searchVerseContent(search['fac_1'], raw_html)
 
             # Fix Image URL and preserve tables with <br />
             verses = fixFacsimileImgUrl(verses, img_urls['fac_1'])
@@ -614,7 +614,7 @@ def extractContents(path, fileName):
             return
 
         elif fileName == file_names['fac_2']:
-            verses = searchForVerseContent(search['fac_2'], raw_html)
+            verses = searchVerseContent(search['fac_2'], raw_html)
 
             # Fix Image URL and preserve tables with <br />
             verses = fixFacsimileImgUrl(verses, img_urls['fac_2'])
@@ -625,7 +625,7 @@ def extractContents(path, fileName):
             return
 
         elif fileName == file_names['fac_3']:
-            verses = searchForVerseContent(search['fac_3'], raw_html)
+            verses = searchVerseContent(search['fac_3'], raw_html)
 
             # Fix Image URL and preserve tables with <br />
             verses = fixFacsimileImgUrl(verses, img_urls['fac_3'])
@@ -636,7 +636,7 @@ def extractContents(path, fileName):
             return
 
         elif path.endswith(file_paths['js_h']) and fileName == file_names['js_h']:
-            verses = searchForVerseContent(search['js_h'], raw_html)
+            verses = searchVerseContent(search['js_h'], raw_html)
 
             for pattern in patterns['jsh_pre_clean']:
                 verses = re.sub(pattern, '', verses)
@@ -654,14 +654,14 @@ def extractContents(path, fileName):
                 verse = re.sub('<p>', '', verse)
                 verse = re.sub('</p>', '', verse)
 
-                checkForRemainingTags(verse, index, path, fileName)
+                checkRemainingTags(verse, index, path, fileName)
                 verse_texts.append(verse)
 
             writeToCsv(path, fileName, verse_texts)
             return
 
         elif path.endswith(file_paths['ps']) and fileName == file_names['ps_119']:
-            verses = searchForVerseContent(search['ps119'], raw_html)
+            verses = searchVerseContent(search['ps119'], raw_html)
 
             for pattern in patterns['ps_119_pre_clean']:
                 verses = re.sub(pattern, '', verses)
@@ -670,7 +670,7 @@ def extractContents(path, fileName):
 
             for index, verse in enumerate(verse_html):
                 verse = cleanVerse(patterns['ps_119_keep'], patterns['ps_119_remove'], verse)
-                checkForRemainingTags(verse, index, path, fileName)
+                checkRemainingTags(verse, index, path, fileName)
                 verse_texts.append(verse)
 
             writeToCsv(path, fileName, verse_texts)
@@ -679,7 +679,7 @@ def extractContents(path, fileName):
         # Handle All Other Files Besides Special Cases
         else:
             try:
-                verses = searchForVerseContent(search['general'], raw_html)
+                verses = searchVerseContent(search['general'], raw_html)
             except AttributeError:
                 print('>>>>>>>>>>>>>>>> Unable to get verses in file: %s/%s.' % (path, fileName), file=sys.stderr)
 
@@ -735,27 +735,39 @@ else:
         run_mode = input()
 
 if run_mode == '1':
-    print('\nWhat is the filename to convert to CSV: ')
-    filename = input()
+    # If the user specificies a single file, try to read it off the command line first
+    if len(sys.argv) > 3:
+        fileName = sys.argv[3]
+
+    else:
+        print('\n-- Files in the specified directory: --\n')
+        for name in os.listdir(path_to_dir):
+            if name.endswith(language_code):
+                print(name)
+        print('\nWhich file would you like to convert?')
+        fileName = input()
+
     try:
-        extractContents(path_to_dir, filename)
+        extractContents(path_to_dir, fileName)
+        print('%s/%s DONE' % (path_to_dir, fileName), file=sys.stderr)
     except:
-        print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path_to_dir, filename))
+        print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path_to_dir, fileName), file=sys.stderr)
 
 elif run_mode == '2':
-    for name in os.listdir(path_to_dir):
-        if name.endswith(language_code):
+    for fileName in os.listdir(path_to_dir):
+        if fileName.endswith(language_code):
             try:
-                extractContents(path_to_dir, name)
+                extractContents(path_to_dir, fileName)
+                print('%s/%s DONE' % (path_to_dir, fileName), file=sys.stderr)
             except:
-                print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path_to_dir, name))
+                print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path_to_dir, fileName), file=sys.stderr)
 
 elif run_mode == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
-        for file in files:
-            if file.endswith(language_code):
-                # try:
-                extractContents(subdir, file)
-                #     print('%s/%s DONE' % (subdir, file), file=sys.stderr)
-                # except:
-                #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, file), file=sys.stderr)
+        for fileName in files:
+            if fileName.endswith(language_code):
+                try:
+                    extractContents(subdir, fileName)
+                    print('%s/%s DONE' % (subdir, fileName), file=sys.stderr)
+                except:
+                    print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, fileName), file=sys.stderr)
