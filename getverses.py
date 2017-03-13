@@ -50,6 +50,7 @@ tags_to_keep = [
     '<div eid="8" words="2" class="signature">',
     '<div eid="9" words="2" class="signature">',
     # For OD 1
+    '<div class="openingBlock">',
     '<div eid="1" words="3" class="salutation">',
     '<div eid="7" words="2" class="signature">',
     '<div eid="8" words="13" class="office">',
@@ -196,7 +197,7 @@ patterns = {
     # The special-case tags for Official Declaration 1
     'od_1_keep': [
         '<div\s+eid="1"\s+words="3"\s+class="salutation">(.*?)</div>',
-        '<div[^>]*?class="openingBlock">(.*?)</div>',
+        # '<div[^>]*?class="openingBlock">(.*?)</div>',
         '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
         '<h2>(.*?)</h2>',
     ],
@@ -217,7 +218,7 @@ patterns = {
     'od_2_keep': [
         '<div[^>]*?class="closing">(.*?)</div>',
         '<div\s+eid="1"\s+words="3"\s+class="salutation">(.*?)</div>',
-        '<div[^>]*?class="openingBlock">(.*?)</div>',
+        # '<div[^>]*?class="openingBlock">(.*?)</div>',
     ],
 
     'od_2_remove': [
