@@ -63,6 +63,7 @@ tags_to_keep = [
     '<div eid="15" words="2" class="signature">',
     '<div eid="16" words="3" class="office">',
     '<div eid="19" words="9" class="date">',
+    '<div eid="5" words="5" class="date">',
     # For facsimiles
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-1.jpg" alt="Facsímile Nº 1" width="408" height="402">',
     '<img src="http://lds.org/scriptures/bc/scriptures/content/english/bible-maps/images/03990_000_fac-2.jpg" alt="Facsímile Nº 2" width="408" height="402">',
@@ -197,7 +198,6 @@ patterns = {
     # The special-case tags for Official Declaration 1
     'od_1_keep': [
         '<div\s+eid="1"\s+words="3"\s+class="salutation">(.*?)</div>',
-        # '<div[^>]*?class="openingBlock">(.*?)</div>',
         '<span[^>]*?class="language[^>]*?emphasis"[^>]*?xml:lang="en">(.*?)</span>',
         '<h2>(.*?)</h2>',
     ],
@@ -218,7 +218,6 @@ patterns = {
     'od_2_keep': [
         '<div[^>]*?class="closing">(.*?)</div>',
         '<div\s+eid="1"\s+words="3"\s+class="salutation">(.*?)</div>',
-        # '<div[^>]*?class="openingBlock">(.*?)</div>',
     ],
 
     'od_2_remove': [
