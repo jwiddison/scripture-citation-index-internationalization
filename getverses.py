@@ -396,21 +396,40 @@ file_names = {
 
 # Fixes chapters that contain multiple instances of <span class="line"> in the same verse
 def removeSpanClassLine(string_to_clean):
-    str = ''
+    modified = False
+    strin = ''
+
+    allCaps = re.finditer('<span class="allCaps">(.*?)</span>', string_to_clean)
+    for index, location in enumerate(list(allCaps)):
+        string_to_clean = string_to_clean[:location.start()] + 'XXXXXXXXXXXXXXXXXXXXXX' + string_to_clean[location.start() + len('<span class="allCaps">'):]
+        string_to_clean = string_to_clean[:location.end() - len('</span>')] + 'YYYYYYY' +  string_to_clean[location.end():]
+        modified = True
+
+    # if modified:
+    #     print(string_to_clean)
+
     beg_offset = len('<span class="line">')
     end_offset = len('</span>')
+
     matches = re.finditer('<span\s+class="line">.*?</span>', string_to_clean)
 
     # Calling matches (because its a special REGEX iterable object) actually consumes it, so it can only be used once.
     # So, I set it to a list here to be able to use it multiple times
     matches = list(matches)
 
+
     for index, location in enumerate(matches):
-        str += string_to_clean[beg_offset + location.start() : location.end() - end_offset]
+        strin += string_to_clean[beg_offset + location.start() : location.end() - end_offset]
         # Add 1 to account for 0-indexed index
         if index + 1 < len(matches):
-            str += break_tag
-    return str
+            strin += break_tag
+
+    allCaps = re.finditer('XXXXXXXXXXXXXXXXXXXXXX(.*?)YYYYYYY', strin)
+    for index, location in enumerate(list(allCaps)):
+        strin = strin[:location.start()] + '<span class="allCaps">' + strin[location.start() + len('<span class="allCaps">'):]
+        strin = strin[:location.end() - len('</span>')] + '</span>' +  strin[location.end():]
+
+    return strin
 
 
 # Given a verse as a string, and 2 lists of regex patterns, strips unwanted html tags out of verse, and returns cleaned string
@@ -766,8 +785,8 @@ elif run_mode == '3':
     for subdir, dirs, files in os.walk(path_to_dir):
         for fileName in files:
             if fileName.endswith(language_code):
-                try:
-                    extractContents(subdir, fileName)
-                    print('%s/%s DONE' % (subdir, fileName), file=sys.stderr)
-                except:
-                    print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, fileName), file=sys.stderr)
+                # try:
+                extractContents(subdir, fileName)
+                #     print('%s/%s DONE' % (subdir, fileName), file=sys.stderr)
+                # except:
+                    # print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, fileName), file=sys.stderr)
