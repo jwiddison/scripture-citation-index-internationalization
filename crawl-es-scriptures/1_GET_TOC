@@ -1,6 +1,0 @@
-#!/bin/bash
-
-wget --no-check-certificate --wait=3 --random-wait --header='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.94 Safari/537.4' "https://www.lds.org/scriptures/bible?lang=spa"
-wget --no-check-certificate --wait=3 --random-wait --header='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.94 Safari/537.4' "https://www.lds.org/scriptures/bofm?lang=spa"
-wget --no-check-certificate --wait=3 --random-wait --header='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.94 Safari/537.4' "https://www.lds.org/scriptures/dc-testament?lang=spa"
-wget --no-check-certificate --wait=3 --random-wait --header='User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.94 Safari/537.4' "https://www.lds.org/scriptures/pgp?lang=spa"

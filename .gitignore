@@ -1,1 +1,4 @@
 *.csv
+/crawl-es-conference
+/crawl-es-liahona
+/other
