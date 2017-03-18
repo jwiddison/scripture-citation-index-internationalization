@@ -1,6 +1,7 @@
 #!/Library/Frameworks/Python.framework/Versions/3.5/bin/python3
 
 import bs4                            # Beautiful soup
+import re                             # Regular Expression Library
 import sys                            # To read command-line args
 # import xml.etree.ElementTree as ET    # For parsing XML documents
 
@@ -35,6 +36,7 @@ options = {
     'fileWriteMode': 'w',
     'outputFileType': '.txt',
     'confContainerDivSelector': '.article-content',
+    'liahonaContainerDivSelector': '#primary',
 }
 
 # ---------------------------------------------------------------------------------------------------------------------- #
@@ -47,22 +49,54 @@ def getTalkBlock(fileName, container_selector):
     with open(fileName + language_code, options['fileOpenMode']) as html:
         markup = html.read()
 
+    markup = re.sub('><', '> <', markup)
+
     soup = bs4.BeautifulSoup(markup, options['bs4RunMode'])
 
     foo = soup.select(container_selector)
+
     bar = ''
 
     for tag in foo:
         bar += str(tag)
 
-    print(bar)
+    content_soup = bs4.BeautifulSoup(bar, options['bs4RunMode'])
 
-    soup2 = bs4.BeautifulSoup(bar, options['bs4RunMode'])
+    tags_keep_contents = {
+    }
 
-    soup2.p.unwrap()
-    print(soup2)
+    for p in content_soup('p'):
+        p.unwrap()
+    # for p in content_soup('a'):
+    #     p.unwrap()
+    for p in content_soup('div'):
+        p.unwrap()
 
-    return soup2
+    for p in content_soup('span', {'id': 'article-id'}):
+        p.decompose()
+    for p in content_soup('span'):
+        p.unwrap()
+    for p in content_soup('ul'):
+        p.decompose()
+
+    # for p in content_soup('div', {'class' : 'stanza'}):
+    #     p.unwrap()
+    # for p in content_soup('div', {'class' : 'article-content'}):
+    #     p.unwrap()
+    # for p in content_soup('div', {'class' : 'poetry'}):
+    #     p.unwrap()
+    # for p in content_soup('div', {'class' : 'body-block'}):
+    #     p.unwrap()
+
+    bar = ''
+
+    for tag in content_soup:
+        bar += str(tag)
+    bar.strip()
+    bar = re.sub('\n\n', '\n', bar)
+    bar = re.sub('^\n*', '', bar)
+
+    return bar
 
 
 # Writes talk content out to file of type specified in options dictionary (Default is .txt)
@@ -78,8 +112,9 @@ def writeToFile(fileName, talk_content):
 
 fileName = sys.argv[1]
 
-talk_html = getTalkBlock(fileName, options['confContainerDivSelector'])
-
-
+if fileName.startswith('conf'):
+    talk_html = getTalkBlock(fileName, options['confContainerDivSelector'])
+elif fileName.startswith('liahona'):
+    talk_html = getTalkBlock(fileName, options['liahonaContainerDivSelector'])
 
 writeToFile(fileName, talk_html)
