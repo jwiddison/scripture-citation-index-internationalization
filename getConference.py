@@ -1,9 +1,8 @@
 #!/Library/Frameworks/Python.framework/Versions/3.5/bin/python3
 
-import bs4                            # Beautiful soup
-import re                             # Regular Expression Library
-import sys                            # To read command-line args
-# import xml.etree.ElementTree as ET    # For parsing XML documents
+import bs4    # Beautiful soup
+import re     # Regular Expression Library
+import sys    # To read command-line args
 
 
 '''
@@ -44,34 +43,14 @@ options = {
 # ---------------------------------------------------------------------------------------------------------------------- #
 
 
-# Returns the containing block of text in list form
-def getTalkBlock(fileName, container_selector):
-    with open(fileName + language_code, options['fileOpenMode']) as html:
-        markup = html.read()
-
-    markup = re.sub('><', '> <', markup)
-
-    soup = bs4.BeautifulSoup(markup, options['bs4RunMode'])
-
-    foo = soup.select(container_selector)
-
-    bar = ''
-
-    for tag in foo:
-        bar += str(tag)
-
-    content_soup = bs4.BeautifulSoup(bar, options['bs4RunMode'])
-
-    tags_keep_contents = {
-    }
-
+# Cleans tag out of soup
+def cleanSoup(content_soup):
     for p in content_soup('p'):
         p.unwrap()
-    # for p in content_soup('a'):
-    #     p.unwrap()
+    for p in content_soup('a'):
+        p.unwrap()
     for p in content_soup('div'):
         p.unwrap()
-
     for p in content_soup('span', {'id': 'article-id'}):
         p.decompose()
     for p in content_soup('span'):
@@ -88,13 +67,51 @@ def getTalkBlock(fileName, container_selector):
     # for p in content_soup('div', {'class' : 'body-block'}):
     #     p.unwrap()
 
-    bar = ''
 
-    for tag in content_soup:
-        bar += str(tag)
-    bar.strip()
-    bar = re.sub('\n\n', '\n', bar)
-    bar = re.sub('^\n*', '', bar)
+# Fixes whitespace issues after cleaning
+def fixSoupWhiteSpace(cleaned_string):
+    cleaned_string = re.sub('\n\n', '\n', cleaned_string)
+    # This is called twice to fix places where 3 or more \n characters are found
+    cleaned_string = re.sub('\n\n', '\n', cleaned_string)
+    cleaned_string = re.sub('\n\s', '\n', cleaned_string)
+    cleaned_string = re.sub('^\s+', '', cleaned_string)
+    cleaned_string.strip()
+
+
+# Converts a soup object to a string
+def convertSoupToString(soup):
+    temp_string = ''
+
+    for tag in soup:
+        temp_string += str(tag)
+
+    return temp_string
+
+
+# Returns the containing block of text in list form
+def extractTalkContent(fileName, container_selector):
+    with open(fileName + language_code, options['fileOpenMode']) as html:
+        markup = html.read()
+
+    # Add single whitespace between tags so there will be spaces between words when tags are removed
+    markup = re.sub('><', '> <', markup)
+
+    soup = bs4.BeautifulSoup(markup, options['bs4RunMode'])
+
+    # Find the containing element for talk
+    foo = soup.select(container_selector)
+
+    # Build what we found back into a string
+    bar = convertSoupToString(foo)
+
+    # And make a new soup out of it
+    content_soup = bs4.BeautifulSoup(bar, options['bs4RunMode'])
+
+    cleanSoup(content_soup)
+
+    bar = convertSoupToString(content_soup)
+
+    fixSoupWhiteSpace(bar)
 
     return bar
 
@@ -113,8 +130,8 @@ def writeToFile(fileName, talk_content):
 fileName = sys.argv[1]
 
 if fileName.startswith('conf'):
-    talk_html = getTalkBlock(fileName, options['confContainerDivSelector'])
+    talk_html = extractTalkContent(fileName, options['confContainerDivSelector'])
 elif fileName.startswith('liahona'):
-    talk_html = getTalkBlock(fileName, options['liahonaContainerDivSelector'])
+    talk_html = extractTalkContent(fileName, options['liahonaContainerDivSelector'])
 
 writeToFile(fileName, talk_html)
