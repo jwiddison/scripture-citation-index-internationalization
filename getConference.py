@@ -105,18 +105,21 @@ def extractTalkContent(path, fileName, container_selector):
     foo = soup.select(container_selector)
 
     # Build what we found back into a string
-    bar = convertSoupToString(foo)
+    temp_string = convertSoupToString(foo)
 
     # And make a new soup out of it
-    content_soup = bs4.BeautifulSoup(bar, options['bs4RunMode'])
+    content_soup = bs4.BeautifulSoup(temp_string, options['bs4RunMode'])
 
     cleanSoup(content_soup)
 
-    bar = convertSoupToString(content_soup)
+    # Turn soup back into string so we can use some REGEX to clean
+    cleaned_string = convertSoupToString(content_soup)
 
-    fixSoupWhiteSpace(bar)
+    # Use REGEX to clean up white-space issues
+    fixSoupWhiteSpace(cleaned_string)
 
-    writeToFile(path, fileName, bar)
+    # Write results out to a file
+    writeToFile(path, fileName, cleaned_string)
 
 
 # Writes talk content out to file of type specified in options dictionary (Default is .txt)
@@ -188,9 +191,9 @@ if run_mode == '1':
         fileName = input()
 
     try:
-        if fileName.startswith(options['confFolder']):
+        if path.startswith(options['confFolder']):
             extractTalkContent(path, fileName, options['confContainerDivSelector'])
-        elif fileName.startswith(options['liahonaFolder']):
+        elif path.startswith(options['liahonaFolder']):
             extractTalkContent(path, fileName, options['liahonaContainerDivSelector'])
         print('%s/%s DONE' % (path, fileName), file=sys.stderr)
     except:
@@ -200,9 +203,9 @@ elif run_mode == '2':
     for fileName in os.listdir(path):
         if fileName.endswith(language_code):
             try:
-                if fileName.startswith(options['confFolder']):
+                if path.startswith(options['confFolder']):
                     extractTalkContent(path, fileName, options['confContainerDivSelector'])
-                elif fileName.startswith(options['liahonaFolder']):
+                elif path.startswith(options['liahonaFolder']):
                     extractTalkContent(path, fileName, options['liahonaContainerDivSelector'])
                 print('%s/%s DONE' % (path, fileName), file=sys.stderr)
             except:
@@ -212,12 +215,11 @@ elif run_mode == '3':
     for subdir, dirs, files in os.walk(path):
         for fileName in files:
             if fileName.endswith(language_code):
-                print(fileName)
                 # try:
-                if fileName.startswith(options['confFolder']):
-                    extractTalkContent(path, fileName, options['confContainerDivSelector'])
-                elif fileName.startswith(options['liahonaFolder']):
-                    extractTalkContent(path, fileName, options['liahonaContainerDivSelector'])
+                if path.startswith(options['confFolder']):
+                    extractTalkContent(subdir, fileName, options['confContainerDivSelector'])
+                elif path.startswith(options['liahonaFolder']):
+                    extractTalkContent(subdir, fileName, options['liahonaContainerDivSelector'])
                 #     print('%s/%s DONE' % (subdir, fileName), file=sys.stderr)
                 # except:
                 #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (subdir, fileName), file=sys.stderr)
