@@ -36,7 +36,7 @@ options = {
     'fileWriteMode': 'w',
     'outputFileType': '.txt',
     'confContainerDivSelector': '.article-content',
-    'liahonaContainerDivSelector': '#primary',
+    'liahonaContainerDivSelector': '#content',
     'confFolder': 'crawl-es-conference',
     'liahonaFolder': 'crawl-es-liahona'
 }
@@ -48,37 +48,37 @@ options = {
 
 # Cleans tag out of soup
 def cleanSoup(content_soup):
-    for p in content_soup('p'):
-        p.unwrap()
-    for p in content_soup('a'):
-        p.unwrap()
-    for p in content_soup('div'):
-        p.unwrap()
-    for p in content_soup('span', {'id': 'article-id'}):
-        p.decompose()
-    for p in content_soup('span'):
-        p.unwrap()
+    # for p in content_soup('p'):
+    #     p.unwrap()
+    # for p in content_soup('a'):
+    #     p.unwrap()
+    # for p in content_soup('div'):
+    #     p.unwrap()
+    # for p in content_soup('span', {'id': 'article-id'}):
+    #     p.decompose()
+    # for p in content_soup('span'):
+    #     p.unwrap()
     for p in content_soup('ul'):
         p.decompose()
 
-    # for p in content_soup('div', {'class' : 'stanza'}):
-    #     p.unwrap()
-    # for p in content_soup('div', {'class' : 'article-content'}):
-    #     p.unwrap()
-    # for p in content_soup('div', {'class' : 'poetry'}):
-    #     p.unwrap()
-    # for p in content_soup('div', {'class' : 'body-block'}):
-    #     p.unwrap()
-
+    for p in content_soup('div', {'class' : 'lumen-template-read'}):
+        p.unwrap()
+    # for p in content_soup('div', {'id' : 'details'}):
+    #     p.decompose()
+    for p in content_soup('div', {'id': 'bottom-gradient'}):
+        p.unwrap()
+    for p in content_soup('div', {'class': 'primary-article'}):
+        p.unwrap()
 
 # Fixes whitespace issues after cleaning
 def fixSoupWhiteSpace(cleaned_string):
     cleaned_string = re.sub('\n\n', '\n', cleaned_string)
-    # This is called twice to fix places where 3 or more \n characters are found
-    cleaned_string = re.sub('\n\n', '\n', cleaned_string)
     cleaned_string = re.sub('\n\s', '\n', cleaned_string)
     cleaned_string = re.sub('^\s+', '', cleaned_string)
+    cleaned_string = re.sub('<!--(.*?)-->', '', cleaned_string)
+    cleaned_string = re.sub('\n\n', '\n', cleaned_string)
     cleaned_string.strip()
+    return cleaned_string
 
 
 # Converts a soup object to a string
@@ -97,7 +97,8 @@ def extractTalkContent(path, fileName, container_selector):
         markup = html.read()
 
     # Add single whitespace between tags so there will be spaces between words when tags are removed
-    markup = re.sub('><', '> <', markup)
+    # markup = re.sub('><', '> <', markup)
+    # TODO: Find a better way to handle this
 
     soup = bs4.BeautifulSoup(markup, options['bs4RunMode'])
 
@@ -116,7 +117,7 @@ def extractTalkContent(path, fileName, container_selector):
     cleaned_string = convertSoupToString(content_soup)
 
     # Use REGEX to clean up white-space issues
-    fixSoupWhiteSpace(cleaned_string)
+    cleaned_string = fixSoupWhiteSpace(cleaned_string)
 
     # Write results out to a file
     writeToFile(path, fileName, cleaned_string)
