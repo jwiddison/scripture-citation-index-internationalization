@@ -48,34 +48,45 @@ options = {
 
 # Cleans tag out of soup
 def cleanSoup(content_soup):
-    # for p in content_soup('p'):
-    #     p.unwrap()
-    # for p in content_soup('a'):
-    #     p.unwrap()
-    # for p in content_soup('div'):
-    #     p.unwrap()
-    # for p in content_soup('span', {'id': 'article-id'}):
-    #     p.decompose()
-    # for p in content_soup('span'):
-    #     p.unwrap()
     for p in content_soup('ul'):
         p.decompose()
-
     for p in content_soup('div', {'class' : 'lumen-template-read'}):
         p.unwrap()
-    # for p in content_soup('div', {'id' : 'details'}):
-    #     p.decompose()
+    for p in content_soup('div', {'id' : 'details'}):
+        p.unwrap()
     for p in content_soup('div', {'id': 'bottom-gradient'}):
         p.unwrap()
     for p in content_soup('div', {'class': 'primary-article'}):
         p.unwrap()
+    for p in content_soup('section', {'class': 'author'}):
+        p.unwrap()
+    for p in content_soup('figure', {'class': 'head-shot'}):
+        p.unwrap()
+    for p in content_soup('noscript'):
+        p.decompose()
+    for p in content_soup('h1'):
+        foo = str(p)
+        capture_group = re.search('<h1>(\s+)(.*?)(\s+)</h1>', foo)
+
+        if capture_group:
+            foo = re.sub('<h1>(\s+)(.*?)(\s+)</h1>', '<h1>%s</h1>' % capture_group.group(2), foo)
+
+        p.replace_with(foo)
+    for p in content_soup('a'):
+        p.unwrap()
+    for p in content_soup('section', {'class': 'sash-icons'}):
+        p.decompose()
+    for p in content_soup('div', {'id': 'audio-player'}):
+        p.decompose()
+
+
 
 # Fixes whitespace issues after cleaning
 def fixSoupWhiteSpace(cleaned_string):
     cleaned_string = re.sub('\n\n', '\n', cleaned_string)
     cleaned_string = re.sub('\n\s', '\n', cleaned_string)
     cleaned_string = re.sub('^\s+', '', cleaned_string)
-    cleaned_string = re.sub('<!--(.*?)-->', '', cleaned_string)
+    # cleaned_string = re.sub('<!--[.*?]-->', '', cleaned_string)
     cleaned_string = re.sub('\n\n', '\n', cleaned_string)
     cleaned_string.strip()
     return cleaned_string
