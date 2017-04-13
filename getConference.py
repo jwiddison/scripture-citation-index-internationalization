@@ -5,7 +5,6 @@ import os     # Gives us access to file system to search for other files
 import re     # Regular Expression Library
 import sys    # To read command-line args
 
-
 '''
     -----  Notes  ------
 
@@ -48,6 +47,10 @@ options = {
 
 # Cleans tag out of soup
 def cleanSoup(content_soup):
+
+    for p in content_soup.findAll(text=lambda text:isinstance(text, bs4.Comment)):
+        p.extract()
+
     for p in content_soup('ul'):
         p.decompose()
     for p in content_soup('div', {'class' : 'lumen-template-read'}):
@@ -78,6 +81,15 @@ def cleanSoup(content_soup):
         p.decompose()
     for p in content_soup('div', {'id': 'audio-player'}):
         p.decompose()
+    for p in content_soup('div', {'class': 'figure'}):
+        p.unwrap()
+    for p in content_soup('span', {'class': 'emphasis'}):
+        p.decompose()
+    for p in content_soup('p', {'class': 'intro'}):
+        p.decompose()
+
+
+
 
 
 
@@ -202,14 +214,14 @@ if run_mode == '1':
         print('\nWhich file would you like to convert?')
         fileName = input()
 
-    try:
-        if path.startswith(options['confFolder']):
-            extractTalkContent(path, fileName, options['confContainerDivSelector'])
-        elif path.startswith(options['liahonaFolder']):
-            extractTalkContent(path, fileName, options['liahonaContainerDivSelector'])
+    # try:
+    if path.startswith(options['confFolder']):
+        extractTalkContent(path, fileName, options['confContainerDivSelector'])
+    elif path.startswith(options['liahonaFolder']):
+        extractTalkContent(path, fileName, options['liahonaContainerDivSelector'])
         print('%s/%s DONE' % (path, fileName), file=sys.stderr)
-    except:
-        print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path, fileName), file=sys.stderr)
+    # except:
+    #     print('>>>>>>>>>>>>>>>> Unable to convert: %s/%s' % (path, fileName), file=sys.stderr)
 
 elif run_mode == '2':
     for fileName in os.listdir(path):
