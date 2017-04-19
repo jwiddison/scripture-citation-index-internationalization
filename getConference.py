@@ -18,6 +18,12 @@ import sys    # To read command-line args
     - replace_with(): good for replacing tags with others
 '''
 
+'''
+    # TODO list
+    1. Make the image sources dynamic.  Ask Dr. Liddle about that
+    2. Get Containing div for all talk p-tags.  Right now if there is anything besides a <p> in the talk, it won't grab it.
+'''
+
 
 # ---------------------------------------------------------------------------------------------------------------------- #
 # ----------------------------------------------------  CONSTANTS  ----------------------------------------------------- #
@@ -42,13 +48,13 @@ options = {
 
 template_dom = [
     '<div id="talkcontent"><div class="nano"><div id="talkwrapper" class="nano-content" tabindex="0"><div id="content" class="two-col"><div id="bottom-gradient"><div id="details" class="clearfix">',
-    'INSERT H1',
+    'INSERT H1 FOR TITLE HERE',
     '<h2 class="author"><div class="byline" id="">',
-    'INSERT 2 Ptags for author',
+    'INSERT FIRST TWO P TAGS FOR AUTHOR',
     '</div></h2><hr></div><!-- end #details --><div id="primary"><blockquote class="intro dontHighlight"><a href="javascript:void(0);" target="_blank" class="nolink"><img id="talkPhoto" src="images/cache/thomas-s-monson-10.jpg" alt="Thomas S. Monson" class="img-decor"></a></blockquote>',
-    'INSERT ARITICLE-ID',
+    'INSERT SPAN ID=ARTICLEID',
     '<div class="figure"></div>',
-    'INSERT Ptags for Talk',
+    'INSERT P TAGS FOR ENTIRE TALK',
     '</div><!-- end #primary --><!-- end #secondary --></div></div></div><div class="nano-pane" style="display: block;"><div class="nano-slider" style="height: 65px; transform: translate(0px, 0px);"></div></div></div></div>'
 ]
 
@@ -80,15 +86,6 @@ def cleanSoup(content_soup):
         p.unwrap()
     for p in content_soup('noscript'):
         p.decompose()
-    # # There is weird white-space in the <h1> titles, this fixes it
-    # for p in content_soup('h1'):
-    #     foo = str(p)
-    #     capture_group = re.search('<h1>(\s+)(.*?)(\s+)</h1>', foo)
-    #
-    #     if capture_group:
-    #         foo = re.sub('<h1>(\s+)(.*?)(\s+)</h1>', '<h1>%s</h1>' % capture_group.group(2), foo)
-    #
-    #     p.replace_with(foo)
     for p in content_soup('a'):
         p.unwrap()
     for p in content_soup('section', {'class': 'sash-icons'}):
@@ -105,30 +102,39 @@ def cleanSoup(content_soup):
 
 def buildDOM(soup):
     final_string = ''
+
     final_string += template_dom[0]
-    for p in soup('h1'):
-        foo = str(p)
+
+    for tag in soup('h1'):
+        foo = str(tag)
         capture_group = re.search('<h1>(\s+)(.*?)(\s+)</h1>', foo)
 
         if capture_group:
             foo = re.sub('<h1>(\s+)(.*?)(\s+)</h1>', '<h1>%s</h1>' % capture_group.group(2), foo)
 
         final_string += foo
+
     final_string += template_dom[2]
+
     counter = 0
-    for p in soup('p'):
+    for tag in soup('p'):
         if counter < 2:
-            final_string += str(p)
+            final_string += str(tag)
             counter += 1
+
     final_string += template_dom[4]
-    for p in soup('span'):
-        final_string += str(p)
+
+    for tag in soup('span', {'id': 'article-id'}):
+        final_string += str(tag)
+
     final_string += template_dom[6]
+
     counter = 0
-    for p in soup('p'):
+    for tag in soup('p'):
         if counter > 1:
-            final_string += str(p)
+            final_string += str(tag)
         counter += 1
+
     final_string += template_dom[8]
 
     return final_string
@@ -140,7 +146,6 @@ def fixSoupWhiteSpace(cleaned_string):
     cleaned_string = re.sub('\n\n', '\n', cleaned_string)
     cleaned_string = re.sub('\n\s', '\n', cleaned_string)
     cleaned_string = re.sub('^\s+', '', cleaned_string)
-    # cleaned_string = re.sub('<!--[.*?]-->', '', cleaned_string)
     cleaned_string = re.sub('\n\n', '\n', cleaned_string)
     cleaned_string.strip()
     return cleaned_string
@@ -171,16 +176,11 @@ def extractTalkContent(path, fileName, container_selector):
 
     cleanSoup(talk_soup)
 
+    print(talk_soup)
+
     cleaned_string = buildDOM(talk_soup)
 
-    soup = bs4.BeautifulSoup(cleaned_string, options['bs4RunMode'])
-    print(soup.prettify())
-
-    # Turn soup back into string so we can use some REGEX to clean
-    # cleaned_string = convertSoupToString(talk_soup)
-    #
-    # # Use REGEX to clean up white-space issues
-    # cleaned_string = fixSoupWhiteSpace(cleaned_string)
+    # print(bs4.BeautifulSoup(cleaned_string, options['bs4RunMode']).prettify())
 
     # Write results out to a file
     writeToFile(path, fileName, cleaned_string)
