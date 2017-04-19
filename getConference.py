@@ -40,6 +40,18 @@ options = {
     'liahonaFolder': 'crawl-es-liahona'
 }
 
+template_dom = [
+    '<div id="talkcontent"><div class="nano"><div id="talkwrapper" class="nano-content" tabindex="0"><div id="content" class="two-col"><div id="bottom-gradient"><div id="details" class="clearfix">',
+    'INSERT H1',
+    '<h2 class="author"><div class="byline" id="">',
+    'INSERT 2 Ptags for author',
+    '</div></h2><hr></div><!-- end #details --><div id="primary"><blockquote class="intro dontHighlight"><a href="javascript:void(0);" target="_blank" class="nolink"><img id="talkPhoto" src="images/cache/thomas-s-monson-10.jpg" alt="Thomas S. Monson" class="img-decor"></a></blockquote>',
+    'INSERT ARITICLE-ID',
+    '<div class="figure"></div>',
+    'INSERT Ptags for Talk'
+    '</div><!-- end #primary --><!-- end #secondary --></div></div></div><div class="nano-pane" style="display: block;"><div class="nano-slider" style="height: 65px; transform: translate(0px, 0px);"></div></div></div></div>'
+]
+
 # ---------------------------------------------------------------------------------------------------------------------- #
 # -----------------------------------------------------  HELPERS  ------------------------------------------------------ #
 # ---------------------------------------------------------------------------------------------------------------------- #
@@ -48,6 +60,7 @@ options = {
 # Cleans tag out of soup
 def cleanSoup(content_soup):
 
+    # Clean out all the comments first
     for p in content_soup.findAll(text=lambda text:isinstance(text, bs4.Comment)):
         p.extract()
 
@@ -67,6 +80,7 @@ def cleanSoup(content_soup):
         p.unwrap()
     for p in content_soup('noscript'):
         p.decompose()
+    # There is weird white-space in the <h1> titles, this fixes it
     for p in content_soup('h1'):
         foo = str(p)
         capture_group = re.search('<h1>(\s+)(.*?)(\s+)</h1>', foo)
@@ -88,9 +102,8 @@ def cleanSoup(content_soup):
     for p in content_soup('p', {'class': 'intro'}):
         p.decompose()
 
-
-
-
+def buildDOM(soup):
+    
 
 
 # Fixes whitespace issues after cleaning
@@ -119,25 +132,20 @@ def extractTalkContent(path, fileName, container_selector):
     with open(path + '/' + fileName, options['fileOpenMode']) as html:
         markup = html.read()
 
-    # Add single whitespace between tags so there will be spaces between words when tags are removed
-    # markup = re.sub('><', '> <', markup)
-    # TODO: Find a better way to handle this
-
-    soup = bs4.BeautifulSoup(markup, options['bs4RunMode'])
+    page_soup = bs4.BeautifulSoup(markup, options['bs4RunMode'])
 
     # Find the containing element for talk
-    foo = soup.select(container_selector)
+    talk = page_soup.select(container_selector)
 
-    # Build what we found back into a string
-    temp_string = convertSoupToString(foo)
+    # Build what we found back into a string and make a new soup out of it
+    talk_soup = bs4.BeautifulSoup(convertSoupToString(talk), options['bs4RunMode'])
 
-    # And make a new soup out of it
-    content_soup = bs4.BeautifulSoup(temp_string, options['bs4RunMode'])
+    cleanSoup(talk_soup)
 
-    cleanSoup(content_soup)
+    buildDOM(talk_soup)
 
     # Turn soup back into string so we can use some REGEX to clean
-    cleaned_string = convertSoupToString(content_soup)
+    cleaned_string = convertSoupToString(talk_soup)
 
     # Use REGEX to clean up white-space issues
     cleaned_string = fixSoupWhiteSpace(cleaned_string)
