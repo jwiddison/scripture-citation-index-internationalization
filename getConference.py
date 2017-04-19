@@ -48,7 +48,7 @@ template_dom = [
     '</div></h2><hr></div><!-- end #details --><div id="primary"><blockquote class="intro dontHighlight"><a href="javascript:void(0);" target="_blank" class="nolink"><img id="talkPhoto" src="images/cache/thomas-s-monson-10.jpg" alt="Thomas S. Monson" class="img-decor"></a></blockquote>',
     'INSERT ARITICLE-ID',
     '<div class="figure"></div>',
-    'INSERT Ptags for Talk'
+    'INSERT Ptags for Talk',
     '</div><!-- end #primary --><!-- end #secondary --></div></div></div><div class="nano-pane" style="display: block;"><div class="nano-slider" style="height: 65px; transform: translate(0px, 0px);"></div></div></div></div>'
 ]
 
@@ -80,15 +80,15 @@ def cleanSoup(content_soup):
         p.unwrap()
     for p in content_soup('noscript'):
         p.decompose()
-    # There is weird white-space in the <h1> titles, this fixes it
-    for p in content_soup('h1'):
-        foo = str(p)
-        capture_group = re.search('<h1>(\s+)(.*?)(\s+)</h1>', foo)
-
-        if capture_group:
-            foo = re.sub('<h1>(\s+)(.*?)(\s+)</h1>', '<h1>%s</h1>' % capture_group.group(2), foo)
-
-        p.replace_with(foo)
+    # # There is weird white-space in the <h1> titles, this fixes it
+    # for p in content_soup('h1'):
+    #     foo = str(p)
+    #     capture_group = re.search('<h1>(\s+)(.*?)(\s+)</h1>', foo)
+    #
+    #     if capture_group:
+    #         foo = re.sub('<h1>(\s+)(.*?)(\s+)</h1>', '<h1>%s</h1>' % capture_group.group(2), foo)
+    #
+    #     p.replace_with(foo)
     for p in content_soup('a'):
         p.unwrap()
     for p in content_soup('section', {'class': 'sash-icons'}):
@@ -102,8 +102,37 @@ def cleanSoup(content_soup):
     for p in content_soup('p', {'class': 'intro'}):
         p.decompose()
 
+
 def buildDOM(soup):
-    
+    final_string = ''
+    final_string += template_dom[0]
+    for p in soup('h1'):
+        foo = str(p)
+        capture_group = re.search('<h1>(\s+)(.*?)(\s+)</h1>', foo)
+
+        if capture_group:
+            foo = re.sub('<h1>(\s+)(.*?)(\s+)</h1>', '<h1>%s</h1>' % capture_group.group(2), foo)
+
+        final_string += foo
+    final_string += template_dom[2]
+    counter = 0
+    for p in soup('p'):
+        if counter < 2:
+            final_string += str(p)
+            counter += 1
+    final_string += template_dom[4]
+    for p in soup('span'):
+        final_string += str(p)
+    final_string += template_dom[6]
+    counter = 0
+    for p in soup('p'):
+        if counter > 1:
+            final_string += str(p)
+        counter += 1
+    final_string += template_dom[8]
+
+    return final_string
+
 
 
 # Fixes whitespace issues after cleaning
@@ -142,13 +171,16 @@ def extractTalkContent(path, fileName, container_selector):
 
     cleanSoup(talk_soup)
 
-    buildDOM(talk_soup)
+    cleaned_string = buildDOM(talk_soup)
+
+    soup = bs4.BeautifulSoup(cleaned_string, options['bs4RunMode'])
+    print(soup.prettify())
 
     # Turn soup back into string so we can use some REGEX to clean
-    cleaned_string = convertSoupToString(talk_soup)
-
-    # Use REGEX to clean up white-space issues
-    cleaned_string = fixSoupWhiteSpace(cleaned_string)
+    # cleaned_string = convertSoupToString(talk_soup)
+    #
+    # # Use REGEX to clean up white-space issues
+    # cleaned_string = fixSoupWhiteSpace(cleaned_string)
 
     # Write results out to a file
     writeToFile(path, fileName, cleaned_string)
