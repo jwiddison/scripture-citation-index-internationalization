@@ -20,7 +20,7 @@ import sys    # To read command-line args
 
 '''
     # TODO list
-    1. Make the image sources dynamic.  Ask Dr. Liddle about that
+    1. -- DONE -- Make the image sources dynamic
     2. Get Containing div for all talk p-tags.  Right now if there is anything besides a <p> in the talk, it won't grab it.
     3. -- DONE -- Pull in image source from LDS.org (including the ALT attribute) and replace the img tag in the template_dom
     4. If there is kicker text, we want to grab it.  If not, just leave it out.
@@ -53,9 +53,10 @@ template_dom = [
     'INSERT H1 FOR TITLE HERE',
     '<h2 class="author"><div class="byline" id="">',
     'INSERT FIRST TWO P TAGS FOR AUTHOR',
-    '</div></h2><hr></div><!-- end #details --><div id="primary"><blockquote class="intro dontHighlight"><a href="javascript:void(0);" target="_blank" class="nolink">',
+    '</div></h2><hr></div><!-- end #details --><div id="primary"><blockquote class="intro dontHighlight">',
     'INSERT IMG TAG HERE',
-    '</a></blockquote>',
+    'INSERT P CLASS=INTRO HERE FOR KICKER TEXT',
+    '</blockquote>',
     'INSERT SPAN ID=ARTICLEID',
     '<div class="figure"></div>',
     'INSERT P TAGS FOR ENTIRE TALK',
@@ -69,11 +70,9 @@ template_dom = [
 
 # Cleans tag out of soup
 def cleanSoup(content_soup):
-
     # Clean out all the comments first
     for p in content_soup.findAll(text=lambda text:isinstance(text, bs4.Comment)):
         p.extract()
-
     for p in content_soup('ul'):
         p.decompose()
     for p in content_soup('div', {'class' : 'lumen-template-read'}):
@@ -98,13 +97,10 @@ def cleanSoup(content_soup):
         p.decompose()
     for p in content_soup('div', {'class': 'figure'}):
         p.unwrap()
-    for p in content_soup('span', {'class': 'emphasis'}):
-        p.decompose()
-    for p in content_soup('p', {'class': 'intro'}):
-        p.decompose()
 
 
 def buildDOM(soup):
+
     final_string = ''
 
     final_string += template_dom[0]
@@ -129,25 +125,29 @@ def buildDOM(soup):
     final_string += template_dom[4]
 
     for tag in soup('img', {'class': 'img-decor'}):
-        # Beautiful Soup tries to close img tags??
+        # Beautiful Soup tries to close img tags??  So get rid of that nonsense.
         foo = str(tag)
         foo = re.sub('\n</img>', '', foo)
         final_string += foo
 
-    final_string += template_dom[6]
+    for tag in soup('p', {'class': 'intro'}):
+        final_string += str(tag)
+
+    final_string += template_dom[7]
 
     for tag in soup('span', {'id': 'article-id'}):
         final_string += str(tag)
 
-    final_string += template_dom[8]
+    final_string += template_dom[9]
 
     counter = 0
     for tag in soup('p'):
         if counter > 1:
+            # TODO: Check for any other tags in the body of talk
             final_string += str(tag)
         counter += 1
 
-    final_string += template_dom[10]
+    final_string += template_dom[11]
 
     return final_string
 
@@ -188,11 +188,9 @@ def extractTalkContent(path, fileName, container_selector):
 
     cleanSoup(talk_soup)
 
-    print(talk_soup)
-
     cleaned_string = buildDOM(talk_soup)
 
-    # print(bs4.BeautifulSoup(cleaned_string, options['bs4RunMode']).prettify())
+    print(bs4.BeautifulSoup(cleaned_string, options['bs4RunMode']).prettify())
 
     # Write results out to a file
     writeToFile(path, fileName, cleaned_string)
